@@ -1,10 +1,9 @@
 import requests
 
-apikey = "AIzaSyCEEuGU-IbSMIM5cASYA5_HqMMOIz0rF2w"
+api_key = "NUESTRA_API_KEY"
+latitude = -34.6037
+longitude = -58.3816
 
-latitude = -38.0055
-longitude = -57.5426
-
-response = requests.get("https://weather.googleapis.com/v1/forecast/days:lookup?key={apikey}&location.latitude={latitude}&location.longitude={longitude}&days=7")
+response = requests.get(f"https://weather.googleapis.com/v1/forecast/days:lookup?key={api_key}&location.latitude={latitude}&location.longitude={longitude}")
 
 print(response.json())
