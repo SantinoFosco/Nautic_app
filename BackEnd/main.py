@@ -1,5 +1,6 @@
 from fastapi import FastAPI,  Query
 from fastapi.middleware.cors import CORSMiddleware
+from random import choice
 
 app = FastAPI()
 
@@ -28,7 +29,8 @@ spots = [
 async def get_spots():
     return spots
 
-# fetch(`http://127.0.0.1:8000/spots/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`)
+# http://127.0.0.1:8000/spots/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}
+# Endpoint para mostrar las condicoines meteorologicas promedio en el PopUp dependiendo del dia
 @app.get("/spots/weather_average_mon")
 async def get_weather_average(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
     if day == 0:
@@ -81,3 +83,9 @@ async def get_weather_average(lat: float = Query(...), lon: float = Query(...), 
             "wave_height": 1.8
         }
     
+# http://127.0.0.1:8000/spots/recomended_sport?lat=${spot.lat}&lon=${spot.lon}&day=${day}
+# Endpoint para la recomendacion del deporte en el PopUp dependiendo del dia
+@app.get("/spots/recomended_sport")
+async def get_recomended_sport(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
+    choices = ["SURF", "KITE", "SURF Y KITE"]
+    return {"sport": choice(choices)}
