@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import MapView from "./components/MapView";
 import ForecastPage from "./components/ForecastPage";
 
@@ -18,9 +17,6 @@ export default function App() {
             <Route path="/forecast/:name" element={<ForecastPage />} />
           </Routes>
         </main>
-
-        {/* 🔹 FOOTER */}
-        <Footer />
       </div>
     </BrowserRouter>
   );

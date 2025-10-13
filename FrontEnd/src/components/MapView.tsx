@@ -13,137 +13,97 @@ type Spot = {
   sports: Sport[];
 };
 
-// ==== Tipos de datos ====
-type HourlyData = {
-  time: string[];
-  temperature_2m?: number[];
-  wind_speed_10m?: number[];
-  precipitation?: number[];
-  wave_height?: number[] | null;
+type WeatherData = {
+  temperature_2m?: number;
+  wind_speed_10m?: number;
+  precipitation?: number;
+  wave_height?: number;
 };
 
-type SpotData = {
-  current: {
-    temperature_2m?: number;
-    wind_speed_10m?: number;
-    precipitation?: number;
-    wave_height?: number | null;
-  };
-  hourly: HourlyData;
-};
-
-// ==== Componente principal ====
 export default function MapView() {
-  const [data, setData] = useState<Record<string, SpotData>>({});
+  const [spots, setSpots] = useState<Spot[]>([]);
+  const [data, setData] = useState<Record<string, WeatherData>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
-  const [day, setDay] = useState(0); // 0 = hoy, 1 = mañana...
+  const [day, setDay] = useState(0);
   const navigate = useNavigate();
-  const [spots, setSpots] = useState<Spot[]>([]);
 
+  // 1️⃣ Cargar spots desde el backend
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/spots")
-      .then((res) => res.json())
-      .then((data) => setSpots(data))
-      .catch((err) => console.error("Error al obtener spots:", err));
+    const fetchSpots = async () => {
+      const res = await fetch("http://127.0.0.1:8000/spots");
+      const backendSpots = await res.json();
+      setSpots(backendSpots);
+    };
+    fetchSpots();
   }, []);
 
-  // === CARGA DE DATOS (7 días) ===
+  // 2️⃣ Cargar datos meteo desde backend
   useEffect(() => {
-    const fetchAll = async () => {
-      const results: Record<string, SpotData> = {};
+    const fetchWeather = async () => {
+      const results: Record<string, WeatherData> = {};
       for (const spot of spots) {
         try {
-          const wRes = await fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}&current=temperature_2m,wind_speed_10m,precipitation&hourly=temperature_2m,wind_speed_10m,precipitation&forecast_days=7&timezone=auto`
-          );
-          const w = await wRes.json();
-
-          const mRes = await fetch(
-            `https://marine-api.open-meteo.com/v1/marine?latitude=${spot.lat}&longitude=${spot.lon}&hourly=wave_height&forecast_days=7&timezone=auto`
-          );
-          const m = await mRes.json();
-
-          results[spot.name] = {
-            current: {
-              temperature_2m: w?.current?.temperature_2m,
-              wind_speed_10m: w?.current?.wind_speed_10m,
-              precipitation: w?.current?.precipitation,
-              wave_height: m?.hourly?.wave_height?.[0] ?? null,
-            },
-            hourly: {
-              time: w?.hourly?.time ?? [],
-              temperature_2m: w?.hourly?.temperature_2m ?? [],
-              wind_speed_10m: w?.hourly?.wind_speed_10m ?? [],
-              precipitation: w?.hourly?.precipitation ?? [],
-              wave_height: m?.hourly?.wave_height ?? [],
-            },
-          };
+          const url = `http://127.0.0.1:8000/spots/weather_average_mon?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
+          const res = await fetch(url);
+          const json = await res.json();
+          results[spot.name] = json;
         } catch {
-          results[spot.name] = {
-            current: {},
-            hourly: { time: [], temperature_2m: [], wind_speed_10m: [], precipitation: [], wave_height: [] },
-          };
+          results[spot.name] = {};
         }
       }
       setData(results);
     };
-    fetchAll();
-  }, [spots]);
+    if (spots.length > 0) fetchWeather();
+  }, [spots, day]);
 
-  // === FILTRO POR DEPORTE ===
+  // 3️⃣ Filtro por deporte
   const visibleSpots = useMemo(() => {
     if (selectedSports.length === 0) return spots;
-    return spots.filter((s) =>
-      s.sports.some((sport) => selectedSports.includes(sport))
-    );
+    return spots.filter((s) => s.sports.some((sport) => selectedSports.includes(sport)));
   }, [selectedSports, spots]);
 
   const selectedSpot = visibleSpots.find((s) => s.name === selected);
 
   const toggleSport = (sport: string) => {
     setSelectedSports((prev) =>
-      prev.includes(sport)
-        ? prev.filter((s) => s !== sport)
-        : [...prev, sport]
+      prev.includes(sport) ? prev.filter((s) => s !== sport) : [...prev, sport]
     );
   };
   const resetSports = () => setSelectedSports([]);
 
   return (
     <div className="relative flex-1 min-h-0 w-full">
-
-      {/* === FILTROS Y SELECTOR DE DÍA === */}
+      {/* === FILTROS === */}
       <div className="fixed z-[1100] right-4 top-[calc(64px+16px)] pointer-events-none">
-        <div className="flex flex-col gap-2 pointer-events-auto items-end">
+        <div className="flex flex-col gap-3 pointer-events-auto items-end">
+
+          {/* Filtro de deporte */}
           <div className="flex gap-2">
             {["surf", "kite"].map((sport) => (
               <button
                 key={sport}
                 onClick={() => toggleSport(sport)}
-                className={`w-[90px] px-4 py-2 rounded-md text-sm font-medium shadow transition-all border
-                  ${
-                    selectedSports.includes(sport)
-                      ? "bg-[#0D3B66] text-white border-[#0D3B66]"
-                      : "bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
-                  }`}
+                className={`w-[90px] px-4 py-2 rounded-md text-sm font-medium shadow transition-all border ${
+                  selectedSports.includes(sport)
+                    ? "bg-[#0D3B66] text-white border-[#0D3B66]"
+                    : "bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
+                }`}
               >
                 {sport.charAt(0).toUpperCase() + sport.slice(1)}
               </button>
             ))}
-
             <button
               onClick={resetSports}
-              className="w-[90px] px-4 py-2 rounded-md text-sm font-medium shadow transition-all border
-                bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
+              className="w-[40px] px-2 py-2 rounded-md text-sm font-bold shadow transition-all border bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
             >
               ×
             </button>
           </div>
 
-          {/* Selector de día */}
+          {/* Filtro de día con DaisyUI select */}
           <select
-            className="bg-white border border-slate-300 text-[#0D3B66] rounded-md text-sm px-2 py-1"
+            className="select select-bordered select-sm bg-white text-[#0D3B66] w-[180px] border-slate-300"
             value={day}
             onChange={(e) => setDay(Number(e.target.value))}
           >
@@ -168,20 +128,15 @@ export default function MapView() {
           attribution='&copy; OpenStreetMap contributors'
         />
 
-        {/* === MARCADORES === */}
+        {/* MARCADORES */}
         {visibleSpots.map((spot) => {
           const d = data[spot.name];
-          const windArr = daySlice(d?.hourly?.wind_speed_10m, day);
-          const waveArr = daySlice(d?.hourly?.wave_height ?? undefined, day);
-          const rainArr = daySlice(d?.hourly?.precipitation, day);
-
-          const wind = avg(windArr);
-          const waves = avg(waveArr);
-          const rain = avg(rainArr);
-
+          const wind = d?.wind_speed_10m ?? 0;
+          const waves = d?.wave_height ?? 0;
+          const rain = d?.precipitation ?? 0;
           const sport = pickSportForSpot(selectedSports, spot.sports);
           const apt = calcAptitude(sport, wind, waves, rain);
-          const color = Number.isNaN(wind) ? "#94a3b8" : aptColor(apt);
+          const color = aptColor(apt);
 
           return (
             <CircleMarker
@@ -198,7 +153,7 @@ export default function MapView() {
           );
         })}
 
-        {/* === POPUP === */}
+        {/* POPUP */}
         {selectedSpot && (
           <Popup
             position={[selectedSpot.lat, selectedSpot.lon]}
@@ -212,60 +167,25 @@ export default function MapView() {
             <div className="w-[260px] space-y-2">
               <h3 className="font-semibold text-[#0D3B66]">{selectedSpot.name}</h3>
 
-              {(() => {
-                const d = data[selectedSpot.name];
-                const wind = avg(daySlice(d?.hourly?.wind_speed_10m, day));
-                const waves = avg(daySlice(d?.hourly?.wave_height ?? undefined, day));
-                const rain = avg(daySlice(d?.hourly?.precipitation, day));
-                const temp = avg(daySlice(d?.hourly?.temperature_2m, day));
+              {data[selectedSpot.name] ? (
+                <>
+                  <div className="text-xs text-slate-500">
+                    Día {day} • Deporte:{" "}
+                    <span className="font-semibold">
+                      {pickSportForSpot(selectedSports, selectedSpot.sports).toUpperCase()}
+                    </span>
+                  </div>
 
-                const sport = pickSportForSpot(selectedSports, selectedSpot.sports);
-                const apt = calcAptitude(sport, wind, waves, rain);
-
-                return Number.isNaN(wind) ? (
-                  <p className="text-gray-400 text-sm">Cargando datos…</p>
-                ) : (
-                  <>
-                    <div className="text-xs text-slate-500">
-                      Día {day} • Deporte:{" "}
-                      <span className="font-semibold">{sport.toUpperCase()}</span> • Aptitud:{" "}
-                      <span
-                        className={`font-semibold ${
-                          apt === "excelente"
-                            ? "text-green-600"
-                            : apt === "bueno"
-                            ? "text-amber-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {apt}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
-                      <Info
-                        icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />}
-                        label="Temp prom."
-                        value={`${temp?.toFixed(1)}°C`}
-                      />
-                      <Info
-                        icon={<Wind className="w-4 h-4 text-[#0D3B66]" />}
-                        label="Viento prom."
-                        value={`${wind?.toFixed(1)} m/s`}
-                      />
-                      <Info
-                        icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />}
-                        label="Lluvia prom."
-                        value={`${rain?.toFixed(1)} mm`}
-                      />
-                      <Info
-                        icon={<Waves className="w-4 h-4 text-[#0D3B66]" />}
-                        label="Olas prom."
-                        value={`${(waves ?? NaN).toFixed(1)} m`}
-                      />
-                    </div>
-                  </>
-                );
-              })()}
+                  <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
+                    <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.name].temperature_2m}°C`} />
+                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.name].wind_speed_10m} m/s`} />
+                    <Info icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />} label="Lluvia prom." value={`${data[selectedSpot.name].precipitation} mm`} />
+                    <Info icon={<Waves className="w-4 h-4 text-[#0D3B66]" />} label="Olas prom." value={`${data[selectedSpot.name].wave_height} m`} />
+                  </div>
+                </>
+              ) : (
+                <p className="text-gray-400 text-sm">Cargando datos…</p>
+              )}
 
               <button
                 className="w-full bg-[#0D3B66] text-white py-2 rounded-md text-sm font-medium hover:bg-[#0b3355] transition"
@@ -273,6 +193,56 @@ export default function MapView() {
               >
                 Ver Pronóstico Completo
               </button>
+
+              {/* === NEWSLETTER === */}
+              <div className="bg-white rounded-lg p-3 mt-3 border border-slate-200 shadow-sm">
+                <p className="text-[13px] text-[#0D3B66] font-medium mb-2 text-center">
+                  Recibí alertas de <span className="font-semibold">{selectedSpot.name}</span>
+                </p>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const email = (e.target as HTMLFormElement).email.value;
+                    alert(`Suscripto a ${selectedSpot.name}: ${email}`);
+                    (e.target as HTMLFormElement).reset();
+                  }}
+                  className="join w-full"
+                >
+                  <label className="input validator join-item flex-1 bg-white border border-slate-300">
+                    <svg
+                      className="h-[1em] opacity-50 mr-1"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                    >
+                      <g
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                        strokeWidth="2.2"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                      </g>
+                    </svg>
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="mail@site.com"
+                      required
+                      className="bg-transparent text-sm flex-1 outline-none"
+                    />
+                  </label>
+                  <button
+  type="submit"
+  className="btn join-item bg-[#0D3B66] text-white border-[#0D3B66] hover:bg-[#0b3355] text-sm px-4 h-[40px] min-h-[40px]"
+>
+  Join
+</button>
+
+                </form>
+              </div>
             </div>
           </Popup>
         )}
@@ -293,15 +263,6 @@ function Info({ icon, label, value }: { icon: React.ReactNode; label: string; va
 }
 
 /* === HELPERS === */
-const daySlice = (arr: number[] | undefined, day: number) => {
-  if (!arr || arr.length === 0) return [];
-  const start = day * 24;
-  return arr.slice(start, start + 24);
-};
-
-const avg = (arr: number[]) =>
-  arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : NaN;
-
 type AptLabel = "excelente" | "bueno" | "malo";
 
 function calcAptitude(sport: "surf" | "kite", wind: number, waves: number, rain: number): AptLabel {
@@ -316,20 +277,12 @@ function calcAptitude(sport: "surf" | "kite", wind: number, waves: number, rain:
 }
 
 function aptColor(label: AptLabel) {
-  return label === "excelente"
-    ? "#16a34a"
-    : label === "bueno"
-    ? "#f59e0b"
-    : "#dc2626";
+  return label === "excelente" ? "#16a34a" : label === "bueno" ? "#f59e0b" : "#dc2626";
 }
 
 function pickSportForSpot(selectedSports: string[], spotSports: Sport[]): Sport {
   if (selectedSports.length === 1 && spotSports.includes(selectedSports[0] as Sport)) {
     return selectedSports[0] as Sport;
-  }
-  if (selectedSports.length > 1) {
-    const found = selectedSports.find((s) => spotSports.includes(s as Sport));
-    if (found) return found as Sport;
   }
   return spotSports[0];
 }
