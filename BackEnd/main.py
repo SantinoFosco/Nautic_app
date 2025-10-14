@@ -2,7 +2,7 @@ from fastapi import FastAPI,  Query
 from fastapi.middleware.cors import CORSMiddleware
 from random import *
 from WeatherLogic import parse_weather_forecast
-from WeatherAPI import get_conditions
+from WeatherAPI import get_weather_conditions
 
 app = FastAPI()
 
@@ -37,9 +37,9 @@ async def get_spots():
 async def get_weather_average(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
     data_list = parse_weather_forecast(get_conditions(lat, lon))[day]
 
-    temperature = (data_list.minTemperature + data_list.maxTemperature) / 2
-    wind_speed = data_list.wind_speed
-    precipitation = data_list.precipitation_qpfCuantity
+    temperature = round((data_list.minTemperature + data_list.maxTemperature) / 2)
+    wind_speed = round(data_list.wind_speed)
+    precipitation = round(data_list.precipitation_qpfCuantity)
     wave_height = 2
 
     return {
@@ -65,6 +65,5 @@ async def get_sportspoints(lat: float = Query(...), lon: float = Query(...), day
 
 @app.get("/general_weather")
 async def get_general_weather(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
-    data_list = parse_weather_forecast(get_conditions(lat, lon))
+    data_list = parse_weather_forecast(lat, lon)
     return data_list[day]
-    

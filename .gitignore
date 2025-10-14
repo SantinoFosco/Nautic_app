@@ -2,6 +2,7 @@
 
 # Ignore specific backend file
 BackEnd/WeatherAPI.py
+BackEnd/MareaAPI.py
 
 # Typical Python ignores
 __pycache__/
