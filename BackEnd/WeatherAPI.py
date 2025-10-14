@@ -1,6 +1,6 @@
 import requests
 
-api_key = "AIzaSyBT8C0-vEzPfMCp6i6kQKBM9mB4dT3iMXk"
+api_key = "PARANGAMICUTIRIMICUARO"
 
 # response = requests.get(f"https://weather.googleapis.com/v1/forecast/days:lookup?key={api_key}&location.latitude={latitude}&location.longitude={longitude}")
 
