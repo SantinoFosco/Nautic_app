@@ -107,7 +107,7 @@ export default function MapView() {
             value={day}
             onChange={(e) => setDay(Number(e.target.value))}
           >
-            {[...Array(7)].map((_, i) => (
+            {[...Array(5)].map((_, i) => (
               <option key={i} value={i}>
                 Día {i === 0 ? "0 (hoy)" : `+${i}`}
               </option>

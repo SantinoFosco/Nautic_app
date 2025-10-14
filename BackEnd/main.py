@@ -1,19 +1,21 @@
 from fastapi import FastAPI,  Query
 from fastapi.middleware.cors import CORSMiddleware
-from random import choice
+from random import *
+from WeatherLogic import parse_weather_forecast
+from WeatherAPI import get_conditions
 
 app = FastAPI()
 
-# 🔹 Permitir que tu frontend (React/Vite) se comunique con el backend
+# Habilitamos comunicacion entre front y back, evitando que el navegador bloquee las peticiones
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Podés restringirlo a ["http://localhost:5173"] si usás Vite
+    allow_origins=["*"],  # Esto habilita que cualquiera consulte el backend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 🔹 Tu lista de spots
+# Lista de spots - Consultar en la BD cuando este conectada
 spots = [
     {"name": "San Clemente del Tuyú", "lat": -36.3567, "lon": -56.7233, "sports": ["kite"]},
     {"name": "San Bernardo", "lat": -36.7000, "lon": -56.7000, "sports": ["kite"]},
@@ -31,57 +33,21 @@ async def get_spots():
 
 # http://127.0.0.1:8000/spots/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}
 # Endpoint para mostrar las condicoines meteorologicas promedio en el PopUp dependiendo del dia
-@app.get("/spots/weather_average_mon")
+@app.get("/spots/weather_average")
 async def get_weather_average(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
-    if day == 0:
-        return {
-            "temperature_2m": 20,
-            "wind_speed_10m": 10,
-            "precipitation": 2,
-            "wave_height": 3
-        }
-    if day == 1:
-        return {
-            "temperature_2m": 22,
-            "wind_speed_10m": 15,
-            "precipitation": 5,
-            "wave_height": 1.5
-        }
-    if day == 2:
-        return {
-            "temperature_2m": 18,
-            "wind_speed_10m": 8,
-            "precipitation": 0,
-            "wave_height": 2
-        }
-    if day == 3:
-        return {
-            "temperature_2m": 25,
-            "wind_speed_10m": 12,
-            "precipitation": 1,
-            "wave_height": 2.5
-        }
-    if day == 4:
-        return {
-            "temperature_2m": 19,
-            "wind_speed_10m": 20,
-            "precipitation": 3,
-            "wave_height": 3.5
-        }
-    if day == 5:
-        return {
-            "temperature_2m": 21,
-            "wind_speed_10m": 18,
-            "precipitation": 4,
-            "wave_height": 2.8
-        }
-    if day == 6:
-        return {
-            "temperature_2m": 23,
-            "wind_speed_10m": 14,
-            "precipitation": 2,
-            "wave_height": 1.8
-        }
+    data_list = parse_weather_forecast(get_conditions(lat, lon))[day]
+
+    temperature = (data_list.minTemperature + data_list.maxTemperature) / 2
+    wind_speed = data_list.wind_speed
+    precipitation = data_list.precipitation_qpfCuantity
+    wave_height = 2
+
+    return {
+        "temperature_2m": temperature,
+        "wind_speed_10m": wind_speed,
+        "precipitation": precipitation,
+        "wave_height": wave_height
+    }
     
 # http://127.0.0.1:8000/spots/recomended_sport?lat=${spot.lat}&lon=${spot.lon}&day=${day}
 # Endpoint para la recomendacion del deporte en el PopUp dependiendo del dia
@@ -89,3 +55,16 @@ async def get_weather_average(lat: float = Query(...), lon: float = Query(...), 
 async def get_recomended_sport(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
     choices = ["SURF", "KITE", "SURF Y KITE"]
     return {"sport": choice(choices)}
+
+#Endpoint para obtener puntos de kite y surf en base al dia para la ForecastPage
+@app.get("/sportspoints")
+async def get_sportspoints(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
+    kite_points = randint(0, 10)
+    sufr_points = randint(0, 10)
+    return {"kite": kite_points, "surf": sufr_points}
+
+@app.get("/general_weather")
+async def get_general_weather(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
+    data_list = parse_weather_forecast(get_conditions(lat, lon))
+    return data_list[day]
+    
