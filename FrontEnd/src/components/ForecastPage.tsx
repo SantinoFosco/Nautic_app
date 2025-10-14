@@ -140,66 +140,28 @@ export default function ForecastPage() {
 
       {/* CONTENIDO */}
       <div className="mx-auto max-w-6xl px-5 py-8 space-y-10">
-        <SectionTitle>Condiciones Actuales</SectionTitle>
+        <SectionTitle>Condiciones Generales</SectionTitle>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <TinyStat icon={<Cloud className="w-4 h-4" />} label="Temperatura" value={pct(data?.current?.cloud_cover)} /> {/* Temperatura promedio*/}
+          <TinyStat icon={<Waves className="w-4 h-4" />} label="Probabilidad de lluvia" value={kmNum(data?.current?.visibility)} />
+          <TinyStat icon={<Thermometer className="w-4 h-4" />} label="Humedad" value={pct(data?.current?.relative_humidity_2m)} />
+          <TinyStat icon={<Wind className="w-4 h-4" />} label="Indice de UV" value={hPa(data?.current?.pressure_msl)} />
+        </div>
+
+        <SectionTitle>Condiciones Detalladas</SectionTitle>
         <div className="grid md:grid-cols-3 gap-5">
-          <BigCard icon={<Waves className="w-5 h-5" />} title="Dirección de Olas">
-            <KV k="Height" v={fmt(data?.current?.wave_height, " m")} />
-            <KV k="Period" v={data?.hourly?.time?.length ? "8s" : "—"} />
+          <BigCard icon={<Waves className="w-5 h-5" />} title="Oleaje">
+            <KV k="Altura" v={fmt(data?.current?.wave_height, " m")} />
+            <KV k="Periodo" v={data?.hourly?.time?.length ? "8s" : "—"} />
           </BigCard>
           <BigCard icon={<Wind className="w-5 h-5" />} title="Viento">
-            <KV k="Speed" v={fmt(kmhNum(data?.current?.wind_speed_10m), " km/h")} />
-            <KV k="Gusts" v={fmt(kmhNum(guessGust(data?.current?.wind_speed_10m)), " km/h")} />
+            <KV k="Velocidad" v={fmt(kmhNum(data?.current?.wind_speed_10m), " km/h")} />
+            <KV k="Rafagas" v={fmt(kmhNum(guessGust(data?.current?.wind_speed_10m)), " km/h")} />
           </BigCard>
-          <BigCard icon={<Thermometer className="w-5 h-5" />} title="Clima">
-            <KV k="Temperature" v={fmt(data?.current?.temperature_2m, "°C")} />
-            <KV k="Precipitation" v={fmt(data?.current?.precipitation, " mm")} />
+          <BigCard icon={<Thermometer className="w-5 h-5" />} title="Temperatura">
+            <KV k="Max" v={fmt(data?.current?.temperature_2m, "°C")} />
+            <KV k="Min" v={fmt(data?.current?.precipitation, " mm")} />
           </BigCard>
-        </div>
-
-        <SectionTitle>Detalles del Clima</SectionTitle>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <TinyStat icon={<Cloud className="w-4 h-4" />} label="Cloud Cover" value={pct(data?.current?.cloud_cover)} />
-          <TinyStat icon={<Thermometer className="w-4 h-4" />} label="Humidity" value={pct(data?.current?.relative_humidity_2m)} />
-          <TinyStat icon={<Waves className="w-4 h-4" />} label="Visibility" value={kmNum(data?.current?.visibility)} />
-          <TinyStat icon={<Wind className="w-4 h-4" />} label="Pressure" value={hPa(data?.current?.pressure_msl)} />
-        </div>
-
-        <SectionTitle>Pronóstico 24 Horas</SectionTitle>
-        <div className="grid md:grid-cols-3 gap-5">
-          <StatCard
-            tone="blue"
-            icon={<Waves className="w-4 h-4" />}
-            label="Altura de Olas"
-            min={m(waveStats.min)} avg={m(waveStats.avg)} max={m(waveStats.max)}
-          />
-          <StatCard
-            tone="emerald"
-            icon={<Wind className="w-4 h-4" />}
-            label="Velocidad del Viento"
-            min={kmh(windStats.min)} avg={kmh(windStats.avg)} max={kmh(windStats.max)}
-          />
-          <StatCard
-            tone="amber"
-            icon={<Thermometer className="w-4 h-4" />}
-            label="Temperatura"
-            min={c(tempStats.min)} avg={c(tempStats.avg)} max={c(tempStats.max)}
-          />
-        </div>
-
-        <SectionTitle>Mejores Horarios para Visitar</SectionTitle>
-        <div className="grid md:grid-cols-2 gap-5">
-          <LongCard
-            icon={<Waves className="w-5 h-5" />}
-            title="Mejor para Surf"
-            subtitle="Sesión matutina"
-            text="Condiciones óptimas esperadas entre 06:00 - 10:00 con vientos offshore y olas limpias de alrededor 1.5–2.0 m."
-          />
-          <LongCard
-            icon={<Wind className="w-5 h-5" />}
-            title="Mejor para Kite"
-            subtitle="Sesión vespertina"
-            text="Picos de viento previstos entre 14:00 - 18:00 con ~20 km/h desde el SE."
-          />
         </div>
       </div>
     </div>

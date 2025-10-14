@@ -44,7 +44,7 @@ export default function MapView() {
       const results: Record<string, WeatherData> = {};
       for (const spot of spots) {
         try {
-          const url = `http://127.0.0.1:8000/spots/weather_average_mon?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
+          const url = `http://127.0.0.1:8000/spots/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
           const res = await fetch(url);
           const json = await res.json();
           results[spot.name] = json;
