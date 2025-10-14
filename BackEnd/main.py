@@ -31,16 +31,16 @@ spots = [
 async def get_spots():
     return spots
 
-# http://127.0.0.1:8000/spots/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}
+# http://127.0.0.1:8000/spots/weather_average?lat=[LATITUD]&lon=[LONGITUD]&day=[DIA]
 # Endpoint para mostrar las condicoines meteorologicas promedio en el PopUp dependiendo del dia
 @app.get("/spots/weather_average")
 async def get_weather_average(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
-    data_list = parse_weather_forecast(get_conditions(lat, lon))[day]
+    data_list = parse_weather_forecast(lat, lon)[day]
 
     temperature = round((data_list.minTemperature + data_list.maxTemperature) / 2)
     wind_speed = round(data_list.wind_speed)
     precipitation = round(data_list.precipitation_qpfCuantity)
-    wave_height = 2
+    wave_height = round(data_list.waveHeight)
 
     return {
         "temperature_2m": temperature,
@@ -49,13 +49,14 @@ async def get_weather_average(lat: float = Query(...), lon: float = Query(...), 
         "wave_height": wave_height
     }
     
-# http://127.0.0.1:8000/spots/recomended_sport?lat=${spot.lat}&lon=${spot.lon}&day=${day}
+# http://127.0.0.1:8000/spots/recomended_sport?lat=[LATITUD]&lon=[LONGITUD]&day=[DIA]
 # Endpoint para la recomendacion del deporte en el PopUp dependiendo del dia
 @app.get("/spots/recomended_sport")
 async def get_recomended_sport(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
     choices = ["SURF", "KITE", "SURF Y KITE"]
     return {"sport": choice(choices)}
 
+# http://127.0.0.1:8000/sportspoints?lat=[LATITUD]&lon=[LONGITUD]&day=[DIA]
 #Endpoint para obtener puntos de kite y surf en base al dia para la ForecastPage
 @app.get("/sportspoints")
 async def get_sportspoints(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
@@ -63,6 +64,8 @@ async def get_sportspoints(lat: float = Query(...), lon: float = Query(...), day
     sufr_points = randint(0, 10)
     return {"kite": kite_points, "surf": sufr_points}
 
+# http://127.0.0.1:8000/general_weather?lat=[LATITUD]&lon=[LONGITUD]&day=[DIA]
+#Endpoint para obtener puntos de kite y surf en base al dia para la ForecastPage
 @app.get("/general_weather")
 async def get_general_weather(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
     data_list = parse_weather_forecast(lat, lon)
