@@ -24,6 +24,7 @@ export default function ForecastPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 🟦 Traer lista de spots desde el backend
   useEffect(() => {
     fetch("http://127.0.0.1:8000/spots")
       .then((r) => r.json())
@@ -36,6 +37,7 @@ export default function ForecastPage() {
     [spots, name]
   );
 
+  // 🟦 Traer datos climáticos desde backend
   useEffect(() => {
     if (!spot) return;
     (async () => {
@@ -107,7 +109,7 @@ export default function ForecastPage() {
           <TinyStat icon={<Thermometer className="w-4 h-4" />} label="Temperatura" value={`${data.maxTemperature}°C`} />
           <TinyStat icon={<Cloud className="w-4 h-4" />} label="Probabilidad de lluvia" value={`${data.precipitation_probability}%`} />
           <TinyStat icon={<Wind className="w-4 h-4" />} label="Humedad" value={`${data.cloudCover}%`} />
-          <TinyStat icon={<Sun className="w-4 h-4" />} label="Índice de UV" value={`${data.uvIndex}`} />
+          <TinyStat icon={<Waves className="w-4 h-4" />} label="Índice de UV" value={`${data.uvIndex}`} />
         </div>
 
         <SectionTitle>Condiciones Detalladas</SectionTitle>

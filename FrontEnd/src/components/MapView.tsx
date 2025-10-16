@@ -26,9 +26,10 @@ export default function MapView() {
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [day, setDay] = useState(0);
+  const [loadingWeather, setLoadingWeather] = useState(false);
   const navigate = useNavigate();
 
-  // 1️⃣ Cargar spots desde el backend
+  // === 1️⃣ Traer todos los spots (solo una vez) ===
   useEffect(() => {
     const fetchSpots = async () => {
       const res = await fetch("http://127.0.0.1:8000/spots");
@@ -38,26 +39,7 @@ export default function MapView() {
     fetchSpots();
   }, []);
 
-  // 2️⃣ Cargar datos meteo desde backend
-  useEffect(() => {
-    const fetchWeather = async () => {
-      const results: Record<string, WeatherData> = {};
-      for (const spot of spots) {
-        try {
-          const url = `http://127.0.0.1:8000/spots/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
-          const res = await fetch(url);
-          const json = await res.json();
-          results[spot.name] = json;
-        } catch {
-          results[spot.name] = {};
-        }
-      }
-      setData(results);
-    };
-    if (spots.length > 0) fetchWeather();
-  }, [spots, day]);
-
-  // 3️⃣ Filtro por deporte
+  // === 2️⃣ Filtro por deporte ===
   const visibleSpots = useMemo(() => {
     if (selectedSports.length === 0) return spots;
     return spots.filter((s) => s.sports.some((sport) => selectedSports.includes(sport)));
@@ -72,12 +54,32 @@ export default function MapView() {
   };
   const resetSports = () => setSelectedSports([]);
 
+  // === 3️⃣ Nuevo: pedir clima solo al click ===
+  const handleSpotClick = async (spot: Spot) => {
+    setSelected(spot.name);
+
+    // si ya tenemos los datos, no vuelvas a pedirlos
+    if (data[spot.name]) return;
+
+    setLoadingWeather(true);
+    try {
+      const url = `http://127.0.0.1:8000/spots/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      setData((prev) => ({ ...prev, [spot.name]: json }));
+    } catch (err) {
+      console.error("Error al cargar clima", err);
+      setData((prev) => ({ ...prev, [spot.name]: {} }));
+    } finally {
+      setLoadingWeather(false);
+    }
+  };
+
   return (
     <div className="relative flex-1 min-h-0 w-full">
       {/* === FILTROS === */}
       <div className="fixed z-[1100] right-4 top-[calc(64px+16px)] pointer-events-none">
         <div className="flex flex-col gap-3 pointer-events-auto items-end">
-
           {/* Filtro de deporte */}
           <div className="flex gap-2">
             {["surf", "kite"].map((sport) => (
@@ -101,7 +103,7 @@ export default function MapView() {
             </button>
           </div>
 
-          {/* Filtro de día con DaisyUI select */}
+          {/* Filtro de día */}
           <select
             className="select select-bordered select-sm bg-white text-[#0D3B66] w-[180px] border-slate-300"
             value={day}
@@ -128,7 +130,7 @@ export default function MapView() {
           attribution='&copy; OpenStreetMap contributors'
         />
 
-        {/* MARCADORES */}
+        {/* === MARCADORES === */}
         {visibleSpots.map((spot) => {
           const d = data[spot.name];
           const wind = d?.wind_speed_10m ?? 0;
@@ -144,7 +146,7 @@ export default function MapView() {
               center={[spot.lat, spot.lon]}
               radius={6}
               pathOptions={{ color, fillColor: color, fillOpacity: 0.9, weight: 2 }}
-              eventHandlers={{ click: () => setSelected(spot.name) }}
+              eventHandlers={{ click: () => handleSpotClick(spot) }}
             >
               <Tooltip permanent direction="bottom" offset={[0, 14]} className="spot-chip">
                 {spot.name}
@@ -153,7 +155,7 @@ export default function MapView() {
           );
         })}
 
-        {/* POPUP */}
+        {/* === POPUP === */}
         {selectedSpot && (
           <Popup
             position={[selectedSpot.lat, selectedSpot.lon]}
@@ -167,7 +169,11 @@ export default function MapView() {
             <div className="w-[260px] space-y-2">
               <h3 className="font-semibold text-[#0D3B66]">{selectedSpot.name}</h3>
 
-              {data[selectedSpot.name] ? (
+              {loadingWeather && !data[selectedSpot.name] ? (
+                <div className="flex justify-center py-4">
+                  <span className="loading loading-spinner loading-md text-[#0D3B66]"></span>
+                </div>
+              ) : data[selectedSpot.name] ? (
                 <>
                   <div className="text-xs text-slate-500">
                     Día {day} • Deporte:{" "}
@@ -184,7 +190,7 @@ export default function MapView() {
                   </div>
                 </>
               ) : (
-                <p className="text-gray-400 text-sm">Cargando datos…</p>
+                <p className="text-gray-400 text-sm">Sin datos disponibles</p>
               )}
 
               <button
@@ -193,56 +199,6 @@ export default function MapView() {
               >
                 Ver Pronóstico Completo
               </button>
-
-              {/* === NEWSLETTER === */}
-              <div className="bg-white rounded-lg p-3 mt-3 border border-slate-200 shadow-sm">
-                <p className="text-[13px] text-[#0D3B66] font-medium mb-2 text-center">
-                  Recibí alertas de <span className="font-semibold">{selectedSpot.name}</span>
-                </p>
-
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const email = (e.target as HTMLFormElement).email.value;
-                    alert(`Suscripto a ${selectedSpot.name}: ${email}`);
-                    (e.target as HTMLFormElement).reset();
-                  }}
-                  className="join w-full"
-                >
-                  <label className="input validator join-item flex-1 bg-white border border-slate-300">
-                    <svg
-                      className="h-[1em] opacity-50 mr-1"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                    >
-                      <g
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                        strokeWidth="2.2"
-                        fill="none"
-                        stroke="currentColor"
-                      >
-                        <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-                      </g>
-                    </svg>
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="mail@site.com"
-                      required
-                      className="bg-transparent text-sm flex-1 outline-none"
-                    />
-                  </label>
-                  <button
-  type="submit"
-  className="btn join-item bg-[#0D3B66] text-white border-[#0D3B66] hover:bg-[#0b3355] text-sm px-4 h-[40px] min-h-[40px]"
->
-  Join
-</button>
-
-                </form>
-              </div>
             </div>
           </Popup>
         )}
