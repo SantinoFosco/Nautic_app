@@ -3,6 +3,7 @@
 # Ignore specific backend file
 BackEnd/WeatherAPI.py
 BackEnd/MareaAPI.py
+BackEnd/uvicorn.log
 
 # Typical Python ignores
 __pycache__/
