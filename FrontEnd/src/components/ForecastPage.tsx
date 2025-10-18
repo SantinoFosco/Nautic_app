@@ -26,7 +26,7 @@ export default function ForecastPage() {
 
   // 🟦 Traer lista de spots desde el backend
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/spots")
+    fetch("http://127.0.0.1:8000/spot/list")
       .then((r) => r.json())
       .then(setSpots)
       .catch(() => console.warn("No se pudieron cargar los spots"));
@@ -44,7 +44,7 @@ export default function ForecastPage() {
       try {
         setLoading(true);
         const res = await fetch(
-          `http://127.0.0.1:8000/general_weather?lat=${spot.lat}&lon=${spot.lon}&day=${day}`
+          `http://127.0.0.1:8000/spot/general_weather?lat=${spot.lat}&lon=${spot.lon}&day=${day}`
         );
         if (!res.ok) throw new Error("Error al obtener datos");
         const json = await res.json();

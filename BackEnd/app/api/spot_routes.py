@@ -1,21 +1,11 @@
-from fastapi import FastAPI,  Query
-from fastapi.middleware.cors import CORSMiddleware
-from random import *
-from WeatherLogic import parse_weather_forecast
-from WeatherAPI import get_weather_conditions
+from fastapi import APIRouter, Query
+from random import choice, randint
+from app.services.WeatherLogic import parse_weather_forecast
 
-app = FastAPI()
+# Creamos el router específico para este grupo de endpoints
+router = APIRouter(prefix="/spot", tags=["Spots"])
 
-# Habilitamos comunicacion entre front y back, evitando que el navegador bloquee las peticiones
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Esto habilita que cualquiera consulte el backend
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Lista de spots - Consultar en la BD cuando este conectada
+# Lista temporal de spots (después se consultará en la BD)
 spots = [
     {"name": "San Clemente del Tuyú", "lat": -36.3567, "lon": -56.7233, "sports": ["kite"]},
     {"name": "San Bernardo", "lat": -36.7000, "lon": -56.7000, "sports": ["kite"]},
@@ -27,14 +17,15 @@ spots = [
     {"name": "Monte Hermoso", "lat": -38.9833, "lon": -61.2833, "sports": ["surf"]},
 ]
 
-@app.get("/spots")
+@router.get("/list")
 async def get_spots():
+    """Devuelve todos los spots disponibles"""
     return spots
 
-# http://127.0.0.1:8000/spots/weather_average?lat=[LATITUD]&lon=[LONGITUD]&day=[DIA]
-# Endpoint para mostrar las condicoines meteorologicas promedio en el PopUp dependiendo del dia
-@app.get("/spots/weather_average")
+
+@router.get("/weather_average")
 async def get_weather_average(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
+    """Devuelve condiciones meteorológicas promedio en el popup"""
     data_list = parse_weather_forecast(lat, lon)[day]
 
     temperature = round((data_list.minTemperature + data_list.maxTemperature) / 2)
@@ -46,27 +37,27 @@ async def get_weather_average(lat: float = Query(...), lon: float = Query(...), 
         "temperature_2m": temperature,
         "wind_speed_10m": wind_speed,
         "precipitation": precipitation,
-        "wave_height": wave_height
+        "wave_height": wave_height,
     }
-    
-# http://127.0.0.1:8000/spots/recomended_sport?lat=[LATITUD]&lon=[LONGITUD]&day=[DIA]
-# Endpoint para la recomendacion del deporte en el PopUp dependiendo del dia
-@app.get("/spots/recomended_sport")
+
+
+@router.get("/recomended_sport")
 async def get_recomended_sport(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
-    choices = ["SURF", "KITE", "SURF Y KITE"]
-    return {"sport": choice(choices)}
+    """Devuelve un deporte recomendado según las condiciones del día"""
+    choices_list = ["SURF", "KITE", "SURF Y KITE"]
+    return {"sport": choice(choices_list)}
 
-# http://127.0.0.1:8000/sportspoints?lat=[LATITUD]&lon=[LONGITUD]&day=[DIA]
-#Endpoint para obtener puntos de kite y surf en base al dia para la ForecastPage
-@app.get("/sportspoints")
+
+@router.get("/sportspoints")
 async def get_sportspoints(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
+    """Devuelve puntajes de surf y kite según las condiciones"""
     kite_points = randint(0, 10)
-    sufr_points = randint(0, 10)
-    return {"kite": kite_points, "surf": sufr_points}
+    surf_points = randint(0, 10)
+    return {"kite": kite_points, "surf": surf_points}
 
-# http://127.0.0.1:8000/general_weather?lat=[LATITUD]&lon=[LONGITUD]&day=[DIA]
-#Endpoint para obtener puntos de kite y surf en base al dia para la ForecastPage
-@app.get("/general_weather")
+
+@router.get("/general_weather")
 async def get_general_weather(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
+    """Devuelve datos generales de clima"""
     data_list = parse_weather_forecast(lat, lon)
     return data_list[day]

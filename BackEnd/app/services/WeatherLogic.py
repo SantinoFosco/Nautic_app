@@ -1,5 +1,5 @@
-from WeatherAPI import get_weather_conditions
-from MareaAPI import get_marea_conditions
+from app.services.WeatherAPI import get_weather_conditions
+from app.services.MareaAPI import get_marea_conditions
 from dataclasses import dataclass
 from datetime import datetime
 from statistics import mean
