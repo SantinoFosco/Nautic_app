@@ -19,7 +19,7 @@ Activamos el ambiente virtual (En caso de dar error de permisos de ejecucion de 
 $ env\Scripts\activate
 
 Instalamos dependencias (tambien se ejecuta una sola vez, a menos que borremos y volvamos a crear el ambiente virtual)
-(env) $ py -m pip install fastapi uvicorn requests arrow python-dotenv
+(env) $ py -m pip install fastapi uvicorn requests arrow python-dotenv sqlalchemy psycopg2-binary
 
 Ejecutamos el BackEnd
 (env) $ uvicorn app.main:app --reload

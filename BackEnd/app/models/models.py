@@ -9,16 +9,21 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     PrimaryKeyConstraint,
-    text
+    text,
+    Sequence
 )
 from sqlalchemy.orm import relationship
-from app.database import Base
+from app.core.database import Base
 
 
+# ------------------------------------------------------
+# Tabla Deporte
+# ------------------------------------------------------
 class Deporte(Base):
     __tablename__ = "deporte"
 
-    id_deporte = Column(String(15), primary_key=True, server_default=text("'DEP' || nextval('deporte_id_seq')"))
+    id = Column(Integer, Sequence("deporte_id_seq"), primary_key=True, autoincrement=True)
+    codigo = Column(String(15), unique=True, nullable=False)
     nombre = Column(String(30), nullable=False, unique=True)
     descripcion = Column(Text)
     activo = Column(Boolean, default=True)
@@ -28,13 +33,17 @@ class Deporte(Base):
     variables = relationship("DeporteVariable", back_populates="deporte")
 
 
+# ------------------------------------------------------
+# Tabla Spot
+# ------------------------------------------------------
 class Spot(Base):
     __tablename__ = "spot"
 
-    id_spot = Column(String(15), primary_key=True, server_default=text("'SPT' || nextval('spot_id_seq')"))
+    id = Column(Integer, Sequence("spot_id_seq"), primary_key=True, autoincrement=True)
+    codigo = Column(String(15), unique=True, nullable=False)
     nombre = Column(String(30), nullable=False)
     tipo = Column(String(20))
-    coordenadas = Column(String(100))  # SQLAlchemy no tiene POINT nativo; se guarda como texto o JSON
+    coordenadas = Column(String(100))  # Guardamos como texto (ej. JSON)
     activo = Column(Boolean, default=True)
 
     # Relaciones
@@ -42,10 +51,14 @@ class Spot(Base):
     variables_meteorologicas = relationship("VariableMeteorologica", back_populates="spot_rel")
 
 
+# ------------------------------------------------------
+# Tabla ProveedorDatos
+# ------------------------------------------------------
 class ProveedorDatos(Base):
     __tablename__ = "proveedor_datos"
 
-    id_proveedor = Column(String(15), primary_key=True, server_default=text("'PRV' || nextval('proveedor_datos_id_seq')"))
+    id = Column(Integer, Sequence("proveedor_id_seq"), primary_key=True, autoincrement=True)
+    codigo = Column(String(15), unique=True, nullable=False)
     nombre = Column(String(30), nullable=False)
     url_base = Column(String(255))
     politica_licencia = Column(Text)
@@ -54,12 +67,16 @@ class ProveedorDatos(Base):
     variables_meteorologicas = relationship("VariableMeteorologica", back_populates="proveedor_rel")
 
 
+# ------------------------------------------------------
+# Tabla VariableMeteorologica
+# ------------------------------------------------------
 class VariableMeteorologica(Base):
     __tablename__ = "variable_meteorologica"
 
-    id_variable = Column(String(15), primary_key=True, server_default=text("'VAR' || nextval('variable_meteorologica_id_seq')"))
-    id_proveedor = Column(String(15), ForeignKey("proveedor_datos.id_proveedor"), nullable=False)
-    spot = Column(String(15), ForeignKey("spot.id_spot"), nullable=False)
+    id = Column(Integer, Sequence("variable_id_seq"), primary_key=True, autoincrement=True)
+    codigo = Column(String(15), unique=True, nullable=False)
+    id_proveedor = Column(Integer, ForeignKey("proveedor_datos.id"), nullable=False)
+    id_spot = Column(Integer, ForeignKey("spot.id"), nullable=False)
     nombre = Column(String(30), nullable=False)
     fecha = Column(Date)
     unidad_base = Column(String(20))
@@ -76,11 +93,14 @@ class VariableMeteorologica(Base):
     deportes = relationship("DeporteVariable", back_populates="variable_rel")
 
 
+# ------------------------------------------------------
+# Tabla intermedia DeporteSpot
+# ------------------------------------------------------
 class DeporteSpot(Base):
     __tablename__ = "deporte_spot"
 
-    id_spot = Column(String(15), ForeignKey("spot.id_spot"), nullable=False)
-    id_deporte = Column(String(15), ForeignKey("deporte.id_deporte"), nullable=False)
+    id_spot = Column(Integer, ForeignKey("spot.id"), nullable=False)
+    id_deporte = Column(Integer, ForeignKey("deporte.id"), nullable=False)
     estado = Column(String(20))
     ultima_actualizacion = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
 
@@ -93,11 +113,14 @@ class DeporteSpot(Base):
     spot = relationship("Spot", back_populates="deportes")
 
 
+# ------------------------------------------------------
+# Tabla intermedia DeporteVariable
+# ------------------------------------------------------
 class DeporteVariable(Base):
     __tablename__ = "deporte_variable"
 
-    id_deporte = Column(String(15), ForeignKey("deporte.id_deporte"), nullable=False)
-    id_variable = Column(String(15), ForeignKey("variable_meteorologica.id_variable"), nullable=False)
+    id_deporte = Column(Integer, ForeignKey("deporte.id"), nullable=False)
+    id_variable = Column(Integer, ForeignKey("variable_meteorologica.id"), nullable=False)
     umbral_min = Column(Numeric)
     umbral_max = Column(Numeric)
     valor_lista = Column(Text)
