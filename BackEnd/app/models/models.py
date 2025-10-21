@@ -73,24 +73,36 @@ class ProveedorDatos(Base):
 class VariableMeteorologica(Base):
     __tablename__ = "variable_meteorologica"
 
-    id = Column(Integer, Sequence("variable_id_seq"), primary_key=True, autoincrement=True)
-    codigo = Column(String(15), unique=True, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    id_tipo_variable = Column(Integer, ForeignKey("tipo_variable_meteorologica.id"), nullable=False)
     id_proveedor = Column(Integer, ForeignKey("proveedor_datos.id"), nullable=False)
     id_spot = Column(Integer, ForeignKey("spot.id"), nullable=False)
-    nombre = Column(String(30), nullable=False)
-    fecha = Column(Date)
-    unidad_base = Column(String(20))
-    tipo_dato = Column(String(20), nullable=False)
-    rango_min = Column(Numeric)
-    rango_max = Column(Numeric)
-    valor = Column(Text)
+    fecha = Column(Date, nullable=False)
+    valor = Column(Text, nullable=False)
     fecha_creacion = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     ultima_actualizacion = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
 
-    # Relaciones
+    tipo_variable_rel = relationship("TipoVariableMeteorologica", back_populates="variables")
     proveedor_rel = relationship("ProveedorDatos", back_populates="variables_meteorologicas")
     spot_rel = relationship("Spot", back_populates="variables_meteorologicas")
-    deportes = relationship("DeporteVariable", back_populates="variable_rel")
+
+
+# ------------------------------------------------------
+# Tabla TipoVariableMeteorologica
+# ------------------------------------------------------
+
+class TipoVariableMeteorologica(Base):
+    __tablename__ = "tipo_variable_meteorologica"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    codigo = Column(String(15), unique=True, nullable=False)
+    nombre = Column(String(50), nullable=False, unique=True)
+    unidad = Column(String(20))
+    tipo = Column(String(20))  # numérico, direccional, etc.
+    descripcion = Column(Text)
+
+    variables = relationship("VariableMeteorologica", back_populates="tipo_variable_rel")
+
 
 
 # ------------------------------------------------------
@@ -101,7 +113,7 @@ class DeporteSpot(Base):
 
     id_spot = Column(Integer, ForeignKey("spot.id"), nullable=False)
     id_deporte = Column(Integer, ForeignKey("deporte.id"), nullable=False)
-    estado = Column(String(20))
+    ponderacion = Column(Integer)
     ultima_actualizacion = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
 
     __table_args__ = (
@@ -120,19 +132,17 @@ class DeporteVariable(Base):
     __tablename__ = "deporte_variable"
 
     id_deporte = Column(Integer, ForeignKey("deporte.id"), nullable=False)
-    id_variable = Column(Integer, ForeignKey("variable_meteorologica.id"), nullable=False)
+    nombre_variable = Column(String(50), nullable=False)
     umbral_min = Column(Numeric)
     umbral_max = Column(Numeric)
-    valor_lista = Column(Text)
     peso = Column(Integer)
     estado = Column(String(50))
     fecha_creacion = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     operador = Column(String(10))
 
     __table_args__ = (
-        PrimaryKeyConstraint("id_deporte", "id_variable"),
+        PrimaryKeyConstraint("id_deporte", "nombre_variable"),
     )
 
     # Relaciones
     deporte = relationship("Deporte", back_populates="variables")
-    variable_rel = relationship("VariableMeteorologica", back_populates="deportes")

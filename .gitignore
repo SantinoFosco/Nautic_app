@@ -7,6 +7,6 @@ __pycache__/
 env/
 
 # Node frontend
-node_modules/
+FrontEnd/node_modules/
 dist/
 .vscode/
