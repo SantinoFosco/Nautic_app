@@ -45,7 +45,7 @@ export default function Navbar() {
 
       {/* DERECHA: Botón */}
       <Link
-        to="/unite"
+        to="/register"
         className="
           border border-white/80 text-white px-4 py-2 rounded-md
           text-sm font-medium hover:bg-white hover:text-[#0D3B66]

@@ -38,3 +38,32 @@
 .mini-button:hover { background: #124b85; }
 .mini-close { color:#95a1b0; }
 .mini-close:hover { color:#334155; }
+
+.input.validator {
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 9999px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input.validator:focus {
+  border-color: #0b2849;
+  box-shadow: 0 0 0 2px rgba(11, 40, 73, 0.15);
+}
+
+.validator-hint {
+  margin-top: -6px;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+body {
+  background-color: white;
+  overflow-x: hidden;
+}
