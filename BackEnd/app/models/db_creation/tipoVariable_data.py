@@ -10,129 +10,140 @@ from app.models.models import TipoVariableMeteorologica  # ajusta si tu import r
 # -----------------------------
 # Datos (human readable)
 # -----------------------------
-TIPOS_METEOROLOGICOS: Iterable[Dict] = [
+DATA = [
     {
-        "nombre": "VientoVelocidad",
-        "unidad": "kmh",
+        "id": 1,
+        "codigo": "VAR_UVINDEX",
+        "nombre": "uvIndex",
+        "unidad": "",
         "tipo": "numerico",
-        "descripcion": (
-            "Intensidad media del viento a 10 m. Rango útil kitesurf 12–25 kt, ideal 15–20 kt, "
-            "laminar y estable. Pesos (1–10): Kitesurf=10 | Surf=4 | Kayak=5."
-        ),
+        "descripcion": "Índice ultravioleta instantáneo (0–11+). Valores >6 requieren protección elevada; crítico para exposición prolongada en agua.",
     },
     {
-        "nombre": "OleajeAltura",
-        "unidad": "m",
+        "id": 2,
+        "codigo": "VAR_PCPPROB",
+        "nombre": "precipitation_probability",
+        "unidad": "%",
         "tipo": "numerico",
-        "descripcion": (
-            "Altura significativa de ola (Hs). Clave para surf; en kitesurf de olas define tamaño del lip y paredes. "
-            "Pesos (1–10): Kitesurf=8 | Surf=9 | Kayak=3."
-        ),
+        "descripcion": "Probabilidad de precipitación en la ventana de pronóstico (0–100%). Útil para planeamiento y gestión de riesgo meteorológico.",
     },
     {
-        "nombre": "OleajePeríodo",
-        "unidad": "s",
-        "tipo": "numerico",
-        "descripcion": (
-            "Período pico (Tp). Períodos >10 s suelen dar olas más ordenadas y potentes. "
-            "Pesos (1–10): Kitesurf=7 | Surf=8 | Kayak=2."
-        ),
-    },
-    {
-        "nombre": "MareaAltura",
-        "unidad": "m",
-        "tipo": "numerico",
-        "descripcion": (
-            "Nivel de marea respecto del cero local. Afecta dónde rompe y el largo útil de la ola/playa. "
-            "Pesos (1–10): Kitesurf=6 | Surf=7 | Kayak=5."
-        ),
-    },
-    {
-        "nombre": "PrecipitacionIntensidad",
+        "id": 3,
+        "codigo": "VAR_QPFMMH",
+        "nombre": "precipitation_qpfCuantity",
         "unidad": "mm/h",
         "tipo": "numerico",
-        "descripcion": (
-            "Tasa de precipitación. Lluvia leve suele ser practicable; tormenta fuerte/eléctrica es criterio de cancelación. "
-            "Pesos (1–10): Kitesurf=5 | Surf=6 | Kayak=7."
-        ),
+        "descripcion": "Tasa de precipitación (QPF). Lluvia intensa >4–5 mm/h suele degradar visibilidad y seguridad; tormentas eléctricas: cancelar.",
     },
     {
-        "nombre": "TemperaturaAire",
-        "unidad": "°C",
+        "id": 4,
+        "codigo": "VAR_WSPD_KMH",
+        "nombre": "wind_speed",
+        "unidad": "km/h",
         "tipo": "numerico",
-        "descripcion": (
-            "Condiciona equipamiento (neoprene, guantes, botines) y riesgos de hipotermia/estrés térmico. "
-            "Pesos (1–10): Kitesurf=5 | Surf=5 | Kayak=6."
-        ),
+        "descripcion": "Velocidad media del viento a 10 m. Kitesurf operativo típico 20–45 km/h; kayak prefiere <20 km/h; surf ideal con offshore leve.",
     },
     {
-        "nombre": "TemperaturaAgua",
+        "id": 5,
+        "codigo": "VAR_WGST_KMH",
+        "nombre": "wind_gustValue",
+        "unidad": "km/h",
+        "tipo": "numerico",
+        "descripcion": "Ráfaga máxima. Diferenciales ráfaga–media altos indican viento arrachado y mayor riesgo operativo (especialmente en kitesurf).",
+    },
+    {
+        "id": 6,
+        "codigo": "VAR_CLDCOV",
+        "nombre": "cloudCover",
+        "unidad": "%",
+        "tipo": "numerico",
+        "descripcion": "Cobertura nubosa (0–100%). Afecta térmicos, lectura del viento, radiación y visibilidad para navegación costera.",
+    },
+    {
+        "id": 7,
+        "codigo": "VAR_TMAX_C",
+        "nombre": "maxTemperature",
         "unidad": "°C",
         "tipo": "numerico",
-        "descripcion": (
-            "Confort térmico y duración segura de la sesión. Relevante para exposición prolongada. "
-            "Pesos (1–10): Kitesurf=5 | Surf=5 | Kayak=6."
-        ),
+        "descripcion": "Temperatura máxima del aire en el período. Impacta confort, hidratación y elección de equipamiento (neoprene vs. lycra).",
+    },
+    {
+        "id": 8,
+        "codigo": "VAR_TMIN_C",
+        "nombre": "minTemperature",
+        "unidad": "°C",
+        "tipo": "numerico",
+        "descripcion": "Temperatura mínima del aire en el período. Clave para madrugadas/noches y cálculo de riesgo de hipotermia al salir del agua.",
+    },
+    {
+        "id": 9,
+        "codigo": "VAR_FLTMAX_C",
+        "nombre": "feelsLikeMaxTemperature",
+        "unidad": "°C",
+        "tipo": "numerico",
+        "descripcion": "Temperatura aparente máxima considerando viento/humedad/sol. Mejora la estimación de confort térmico real en superficie.",
+    },
+    {
+        "id": 10,
+        "codigo": "VAR_FLTMIN_C",
+        "nombre": "feelsLikeMinTemperature",
+        "unidad": "°C",
+        "tipo": "numerico",
+        "descripcion": "Temperatura aparente mínima. Útil para definir protección térmica (guantes/botines/capucha) en sesiones largas.",
+    },
+    {
+        "id": 11,
+        "codigo": "VAR_WATERT_C",
+        "nombre": "waterTemperature",
+        "unidad": "°C",
+        "tipo": "numerico",
+        "descripcion": "Temperatura del agua. Determina grosor de neoprene, riesgo de hipotermia y duración segura de la sesión.",
+    },
+    {
+        "id": 12,
+        "codigo": "VAR_WVHGT_M",
+        "nombre": "waveHeight",
+        "unidad": "m",
+        "tipo": "numerico",
+        "descripcion": "Altura significativa del oleaje (Hs). Métrica base para calidad de surf y condiciones de mar para navegación ligera.",
+    },
+    {
+        "id": 13,
+        "codigo": "VAR_WVPER_S",
+        "nombre": "wavePeriod",
+        "unidad": "s",
+        "tipo": "numerico",
+        "descripcion": "Período pico del oleaje (Tp). Períodos largos indican mayor energía y olas más ordenadas; crítico en evaluación de spots.",
     },
 ]
 
-# -----------------------------
-# Helpers
-# -----------------------------
-
-_STOPWORDS = {"de", "del", "la", "el", "los", "las", "y", "a", "en", "por", "para", "-", "–"}
-
-def _slug_iniciales(nombre: str) -> str:
-    """
-    Genera iniciales significativas del nombre.
-    Ej.: 'Viento - velocidad' -> 'VV'; 'Temperatura del agua' -> 'TDA'
-    """
-    # Normaliza separadores y quita tildes simples para robustez visual (opcional).
-    tokens = re.split(r"[^\wáéíóúüñÁÉÍÓÚÜÑ]+", nombre.lower())
-    tokens = [t for t in tokens if t and t not in _STOPWORDS]
-    iniciales = "".join(t[0].upper() for t in tokens)
-    return iniciales or "GEN"
-
-def _gen_codigo(nombre: str) -> str:
-    return f"VAR_{_slug_iniciales(nombre)}"
-
-def _upsert_tipo_variable(session: Session, data: Dict) -> TipoVariableMeteorologica:
-    """
-    Evita duplicados por 'nombre' (unique). Si existe, actualiza unidad/tipo/descripcion/codigo.
-    """
-    nombre = data["nombre"].strip()
-    obj = session.query(TipoVariableMeteorologica).filter_by(nombre=nombre).one_or_none()
-    codigo = _gen_codigo(nombre)
-
-    if obj is None:
-        obj = TipoVariableMeteorologica(
-            nombre=nombre,
-            unidad=data.get("unidad"),
-            tipo=data.get("tipo"),
-            descripcion=data.get("descripcion"),
-            codigo=codigo,  # generado automáticamente
-        )
-        session.add(obj)
-    else:
-        # Sin duplicar: actualizar campos si cambiaron (mantiene human readable)
-        obj.unidad = data.get("unidad")
-        obj.tipo = data.get("tipo")
-        obj.descripcion = data.get("descripcion")
-        obj.codigo = codigo
-
-    return obj
 
 # -----------------------------
 # Entry point (similar a sports_data.py)
 # -----------------------------
 
-def seed_tipo_variable_meteorologica(session: Session) -> None:
-    """
-    Inserta/actualiza las variables meteorológicas base.
-    Uso:
-        with Session(engine) as s:
-            seed_tipo_variable_meteorologica(s)
-            s.commit()
-    """
-    for item in TIPOS_METEOROLOGICOS:
-        _upsert_tipo_variable(session, item)
+def seed_tipo_variable_meteorologica(db: Session):
+    try:
+        print("🌦️ Insertando variables meteorológicas en la base de datos...")
+
+        for var in DATA:
+            existe = db.query(TipoVariableMeteorologica).filter_by(nombre=var["nombre"]).first()
+            if not existe:
+                nueva_var = TipoVariableMeteorologica(
+                    id=var["id"],
+                    codigo=var["codigo"],
+                    nombre=var["nombre"],
+                    unidad=var["unidad"],
+                    tipo=var["tipo"],
+                    descripcion=var["descripcion"],
+                )
+                db.add(nueva_var)
+
+        db.commit()
+        print("✅ Variables meteorológicas insertadas correctamente.")
+
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error al insertar variables meteorológicas: {e}")
+    finally:
+        db.close()
