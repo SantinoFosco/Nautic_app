@@ -142,7 +142,7 @@ export default function Register() {
       </div>
 
       {/* Columna derecha */}
-      <div className="flex justify-center items-center w-1/2 bg-[#59b7ff]">
+      <div className="flex justify-center items-center w-1/2 bg-[#41B1E3]">
         <img
           src={kayakImg}
           alt="Ilustración kayak"

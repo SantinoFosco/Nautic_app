@@ -3,10 +3,12 @@ import Navbar from "./components/Navbar";
 import MapView from "./components/MapView";
 import ForecastPage from "./components/ForecastPage";
 import Register from "./components/Register";
+import Login from "./components/Login";
+import Business from "./components/BusinessEmptyState";
 
 function Layout() {
   const location = useLocation();
-  const isFullScreen = location.pathname === "/register";
+  const isFullScreen = location.pathname === "/register" || location.pathname === "/login";
 
   return (
     <div
@@ -21,16 +23,16 @@ function Layout() {
       <main
         className={
           isFullScreen
-            ? // 🔹 layout especial para /register (pantalla completa)
-              "flex flex-1 justify-center items-stretch bg-white mt-[64px]" 
-            : // 🔹 layout normal
-              "flex flex-1 mt-16"
+            ? "flex flex-1 justify-center items-stretch bg-white mt-[64px]"
+            : "flex flex-1 mt-16"
         }
       >
         <Routes>
           <Route path="/" element={<MapView />} />
           <Route path="/forecast/:name" element={<ForecastPage />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/business" element={<Business />} />
         </Routes>
       </main>
     </div>
