@@ -151,9 +151,9 @@ class DeporteVariable(Base):
 # Tabla Usuario (Dueño)
 # ------------------------------------------------------
 class Usuario(Base):
-    _tablename_ = "usuario"
+    __tablename__ = "usuario"
 
-    id_dueño = Column(Integer, Sequence("usuario_id_seq"), primary_key=True, autoincrement=True)
+    id_dueno = Column(Integer, Sequence("usuario_id_seq"), primary_key=True, autoincrement=True)
     nombre = Column(String(50), nullable=False)
     apellido = Column(String(50), nullable=False)
     telefono = Column(String(30))
@@ -162,14 +162,14 @@ class Usuario(Base):
     fecha_creacion = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
 
     # Relaciones
-    negocios = relationship("Negocio", backref="dueno")
+    negocios = relationship("Negocio", back_populates="usuario")
 
 # ------------------------------------------------------
 # Tabla Negocio
 # ------------------------------------------------------
 
 class Negocio(Base):
-    _tablename_ = "negocio"
+    __tablename__ = "negocio"
 
     id_negocio = Column(Integer, Sequence("negocio_id_seq"), primary_key=True, autoincrement=True)
     id_dueno = Column(Integer, ForeignKey("usuario.id"), nullable=False)  # Suponiendo que hay una tabla Usuario o Dueño
@@ -188,19 +188,19 @@ class Negocio(Base):
 
     # Relaciones
     deportes = relationship("NegocioDeporte", backref="negocio")
-    usuario = relationship("Usuario", backref="negocios")
+    usuario = relationship("Usuario", back_populates="negocios")
 
 # ------------------------------------------------------
 # Tabla intermedia Negocio_Deporte
 # ------------------------------------------------------
 class NegocioDeporte(Base):
-    _tablename_ = "negocio_deporte"
+    __tablename__ = "negocio_deporte"
 
-    id_negocio = Column(Integer, ForeignKey("negocio.id"), nullable=False)
+    id_negocio = Column(Integer, ForeignKey("negocio.id_negocio"), nullable=False)
     id_deporte = Column(Integer, ForeignKey("deporte.id"), nullable=False)
     tipo_servicio = Column(String(20))
 
-    _table_args_ = (
+    __table_args__ = (
         PrimaryKeyConstraint("id_negocio", "id_deporte"),
     )
 
