@@ -1,14 +1,10 @@
 # app/models/db_creation/meteorology_data.py
-# Seed de TipoVariableMeteorologica (uniforme a sports_data.py)
-
 from sqlalchemy.orm import Session
-from typing import Iterable, Dict
-import re
-
-from app.models.models import TipoVariableMeteorologica  # ajusta si tu import real difiere
+from app.core.database import SessionLocal  # ✅ Importamos la sesión
+from app.models.models import TipoVariableMeteorologica
 
 # -----------------------------
-# Datos (human readable)
+# Datos base
 # -----------------------------
 DATA = [
     {
@@ -25,7 +21,7 @@ DATA = [
         "nombre": "precipitation_probability",
         "unidad": "%",
         "tipo": "numerico",
-        "descripcion": "Probabilidad de precipitación en la ventana de pronóstico (0–100%). Útil para planeamiento y gestión de riesgo meteorológico.",
+        "descripcion": "Probabilidad de precipitación en la ventana de pronóstico (0–100%).",
     },
     {
         "id": 3,
@@ -33,7 +29,7 @@ DATA = [
         "nombre": "precipitation_qpfCuantity",
         "unidad": "mm/h",
         "tipo": "numerico",
-        "descripcion": "Tasa de precipitación (QPF). Lluvia intensa >4–5 mm/h suele degradar visibilidad y seguridad; tormentas eléctricas: cancelar.",
+        "descripcion": "Tasa de precipitación (QPF).",
     },
     {
         "id": 4,
@@ -41,7 +37,7 @@ DATA = [
         "nombre": "wind_speed",
         "unidad": "km/h",
         "tipo": "numerico",
-        "descripcion": "Velocidad media del viento a 10 m. Kitesurf operativo típico 20–45 km/h; kayak prefiere <20 km/h; surf ideal con offshore leve.",
+        "descripcion": "Velocidad media del viento a 10 m.",
     },
     {
         "id": 5,
@@ -49,7 +45,7 @@ DATA = [
         "nombre": "wind_gustValue",
         "unidad": "km/h",
         "tipo": "numerico",
-        "descripcion": "Ráfaga máxima. Diferenciales ráfaga–media altos indican viento arrachado y mayor riesgo operativo (especialmente en kitesurf).",
+        "descripcion": "Ráfaga máxima.",
     },
     {
         "id": 6,
@@ -57,7 +53,7 @@ DATA = [
         "nombre": "cloudCover",
         "unidad": "%",
         "tipo": "numerico",
-        "descripcion": "Cobertura nubosa (0–100%). Afecta térmicos, lectura del viento, radiación y visibilidad para navegación costera.",
+        "descripcion": "Cobertura nubosa (0–100%).",
     },
     {
         "id": 7,
@@ -65,7 +61,7 @@ DATA = [
         "nombre": "maxTemperature",
         "unidad": "°C",
         "tipo": "numerico",
-        "descripcion": "Temperatura máxima del aire en el período. Impacta confort, hidratación y elección de equipamiento (neoprene vs. lycra).",
+        "descripcion": "Temperatura máxima del aire en el período.",
     },
     {
         "id": 8,
@@ -73,7 +69,7 @@ DATA = [
         "nombre": "minTemperature",
         "unidad": "°C",
         "tipo": "numerico",
-        "descripcion": "Temperatura mínima del aire en el período. Clave para madrugadas/noches y cálculo de riesgo de hipotermia al salir del agua.",
+        "descripcion": "Temperatura mínima del aire en el período.",
     },
     {
         "id": 9,
@@ -81,7 +77,7 @@ DATA = [
         "nombre": "feelsLikeMaxTemperature",
         "unidad": "°C",
         "tipo": "numerico",
-        "descripcion": "Temperatura aparente máxima considerando viento/humedad/sol. Mejora la estimación de confort térmico real en superficie.",
+        "descripcion": "Temperatura aparente máxima considerando viento/humedad/sol.",
     },
     {
         "id": 10,
@@ -89,7 +85,7 @@ DATA = [
         "nombre": "feelsLikeMinTemperature",
         "unidad": "°C",
         "tipo": "numerico",
-        "descripcion": "Temperatura aparente mínima. Útil para definir protección térmica (guantes/botines/capucha) en sesiones largas.",
+        "descripcion": "Temperatura aparente mínima.",
     },
     {
         "id": 11,
@@ -97,7 +93,7 @@ DATA = [
         "nombre": "waterTemperature",
         "unidad": "°C",
         "tipo": "numerico",
-        "descripcion": "Temperatura del agua. Determina grosor de neoprene, riesgo de hipotermia y duración segura de la sesión.",
+        "descripcion": "Temperatura del agua.",
     },
     {
         "id": 12,
@@ -105,7 +101,7 @@ DATA = [
         "nombre": "waveHeight",
         "unidad": "m",
         "tipo": "numerico",
-        "descripcion": "Altura significativa del oleaje (Hs). Métrica base para calidad de surf y condiciones de mar para navegación ligera.",
+        "descripcion": "Altura significativa del oleaje (Hs).",
     },
     {
         "id": 13,
@@ -113,15 +109,14 @@ DATA = [
         "nombre": "wavePeriod",
         "unidad": "s",
         "tipo": "numerico",
-        "descripcion": "Período pico del oleaje (Tp). Períodos largos indican mayor energía y olas más ordenadas; crítico en evaluación de spots.",
+        "descripcion": "Período pico del oleaje (Tp).",
     },
 ]
 
 
 # -----------------------------
-# Entry point (similar a sports_data.py)
+# Función de seed
 # -----------------------------
-
 def seed_tipo_variable_meteorologica(db: Session):
     try:
         print("🌦️ Insertando variables meteorológicas en la base de datos...")
@@ -129,14 +124,7 @@ def seed_tipo_variable_meteorologica(db: Session):
         for var in DATA:
             existe = db.query(TipoVariableMeteorologica).filter_by(nombre=var["nombre"]).first()
             if not existe:
-                nueva_var = TipoVariableMeteorologica(
-                    id=var["id"],
-                    codigo=var["codigo"],
-                    nombre=var["nombre"],
-                    unidad=var["unidad"],
-                    tipo=var["tipo"],
-                    descripcion=var["descripcion"],
-                )
+                nueva_var = TipoVariableMeteorologica(**var)
                 db.add(nueva_var)
 
         db.commit()
@@ -147,3 +135,17 @@ def seed_tipo_variable_meteorologica(db: Session):
         print(f"❌ Error al insertar variables meteorológicas: {e}")
     finally:
         db.close()
+
+
+# -----------------------------
+# Entry point (permite ejecutar directamente el script)
+# -----------------------------
+if __name__ == "__main__":
+    from app.core.database import engine, Base
+
+    # Opcional: asegurarte de que las tablas existen
+    Base.metadata.create_all(bind=engine)
+
+    db = SessionLocal()
+    seed_tipo_variable_meteorologica(db)
+

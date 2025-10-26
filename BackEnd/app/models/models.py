@@ -172,7 +172,7 @@ class Negocio(Base):
     __tablename__ = "negocio"
 
     id_negocio = Column(Integer, Sequence("negocio_id_seq"), primary_key=True, autoincrement=True)
-    id_dueno = Column(Integer, ForeignKey("usuario.id"), nullable=False)  # Suponiendo que hay una tabla Usuario o Dueño
+    id_dueno = Column(Integer, ForeignKey("usuario.id_dueno"), nullable=False)  # Suponiendo que hay una tabla Usuario o Dueño
     nombre_fantasia = Column(String(100), nullable=False)
     rubro = Column(String(50))
     sitio_web = Column(String(255))
