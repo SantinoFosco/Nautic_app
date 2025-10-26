@@ -6,7 +6,6 @@
 # ----------------------------------------------------------
 
 import json
-from dataclasses import dataclass
 from datetime import datetime
 from statistics import mean
 from typing import Dict, List, Tuple
@@ -14,7 +13,10 @@ from typing import Dict, List, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
-from app.core.database import SessionLocal
+# 🔁 Inyección de sesión (DI)
+# Ajustá el import según tu layout real (p.ej. "from app.dependencies import get_db")
+from app.core.dependencies import get_db
+
 from app.models.models import (
     Spot,
     ProveedorDatos,
@@ -63,6 +65,9 @@ def _avg(values):
     return mean(vals) if vals else 0
 
 def _parse_coords(coord_text: str) -> Tuple[float, float]:
+    """
+    Espera coordenadas como JSON string: '{"lat": -38.0, "lon": -57.6}'
+    """
     data = json.loads(coord_text) if coord_text else {}
     return float(data.get("lat")), float(data.get("lon"))
 
@@ -77,6 +82,9 @@ def _get_or_create_proveedor(session: Session, nombre: str) -> int:
     return row.id
 
 def _tipo_variable_map(session: Session) -> Dict[str, int]:
+    """
+    Retorna {nombre_variable: id_tipo_variable} a partir de TipoVariableMeteorologica.
+    """
     rows = session.query(TipoVariableMeteorologica).all()
     return {r.nombre: r.id for r in rows}
 
@@ -88,6 +96,9 @@ def _upsert_variable(
     fecha,
     valor_text: str,
 ) -> VariableMeteorologica:
+    """
+    Upsert por (id_tipo_variable, id_proveedor, id_spot, fecha).
+    """
     existing = (
         session.query(VariableMeteorologica)
         .filter(
@@ -128,12 +139,12 @@ def insert_forecast_for_spot(session: Session, spot: Spot) -> int:
     lat, lon = _parse_coords(spot.coordenadas)
 
     # 2) Cargar mapas de tipos y proveedores
-    tipo_map = _tipo_variable_map(session)                     # {nombre_variable -> id_tipo}
+    tipo_map = _tipo_variable_map(session)  # {nombre_variable -> id_tipo}
     proveedor_ids = {p: _get_or_create_proveedor(session, p) for p in set(PROVIDER_BY_VAR.values())}
 
     # 3) Consultar APIs
-    forecast_weather_json = get_weather_conditions(lat, lon)   # Google (diario)
-    forecast_marea_json = get_marea_conditions(lat, lon)       # StormGlass (horario)
+    forecast_weather_json = get_weather_conditions(lat, lon)  # Google (diario)
+    forecast_marea_json = get_marea_conditions(lat, lon)      # StormGlass (horario)
 
     # 4) Indexar horas StormGlass por fecha YYYY-MM-DD
     horas_por_fecha: Dict[str, List[dict]] = {}
@@ -161,7 +172,7 @@ def insert_forecast_for_spot(session: Session, spot: Spot) -> int:
         sg_hours = horas_por_fecha.get(date_str, [])
         avg_water_temp = _avg([_safe_get(h, "waterTemperature", "sg") for h in sg_hours])
         avg_wave_height = _avg([_safe_get(h, "waveHeight", "sg") for h in sg_hours])
-        avg_wave_period = _avg([_safe_get(h, "wavePeriod", "sg") for h in sg_hours])
+        avg_wave_period  = _avg([_safe_get(h, "wavePeriod",  "sg") for h in sg_hours])
 
         # Construir valores por variable (solo las definidas)
         values = {
@@ -177,15 +188,16 @@ def insert_forecast_for_spot(session: Session, spot: Spot) -> int:
             "feelsLikeMinTemperature": _safe_get(day, "feelsLikeMinTemperature", "degrees", default=0),
             "waterTemperature": avg_water_temp,
             "waveHeight": avg_wave_height,
-            "wavePeriod": avg_wave_period,
+            "wavePeriod":  avg_wave_period,
         }
 
         # Persistir cada variable
         for var_name, val in values.items():
-            if var_name not in tipo_map:
-                # Si el tipo no existe, lo saltamos (o podría crearse on-the-fly)
+            id_tipo = tipo_map.get(var_name)
+            if not id_tipo:
+                # Si el tipo no existe, lo saltamos (o podríamos crearlo on-the-fly)
                 continue
-            id_tipo = tipo_map[var_name]
+
             id_prov = proveedor_ids[PROVIDER_BY_VAR[var_name]]
             valor_text = "" if val is None else f"{val}"
 
@@ -202,27 +214,27 @@ def insert_forecast_for_spot(session: Session, spot: Spot) -> int:
     return count
 
 
-def insert_forecast_for_all_spots() -> None:
+def insert_forecast_for_all_spots(session: Session) -> None:
     """
-    Itera todos los spots y los inserta en variable_meteorologica.
+    Itera todos los spots y los inserta en variable_meteorologica usando la sesión inyectada.
     """
-    db = SessionLocal()
-    try:
-        print("⛅ Iniciando ingesta meteorológica para todos los spots...")
-        spots = db.query(Spot).all()
-        for sp in spots:
-            try:
-                inserted = insert_forecast_for_spot(db, sp)
-                db.commit()
-                print(f"✅ Spot {sp.id} ('{sp.nombre}') → {inserted} upserts.")
-            except Exception as e:
-                db.rollback()
-                print(f"❌ Error en spot {sp.id} ('{sp.nombre}'): {e}")
-        print("🏁 Ingesta completada.")
-    finally:
-        db.close()
+    print("⛅ Iniciando ingesta meteorológica para todos los spots...")
+    spots = session.query(Spot).all()
+    for sp in spots:
+        try:
+            inserted = insert_forecast_for_spot(session, sp)
+            session.commit()
+            print(f"✅ Spot {sp.id} ('{sp.nombre}') → {inserted} upserts.")
+        except Exception as e:
+            session.rollback()
+            print(f"❌ Error en spot {sp.id} ('{sp.nombre}'): {e}")
+    print("🏁 Ingesta completada.")
 
 
-# Si querés ejecutar directo este módulo:
+# ----------------------------------------------------------
+# Ejecución directa (opcional)
+# ----------------------------------------------------------
 if __name__ == "__main__":
-    insert_forecast_for_all_spots()
+    # Usamos el generador get_db() para obtener una sesión y cerrarla correctamente
+    for db in get_db():
+        insert_forecast_for_all_spots(db)
