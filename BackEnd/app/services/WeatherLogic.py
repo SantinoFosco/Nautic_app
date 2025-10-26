@@ -27,6 +27,8 @@ from app.models.models import (
 from app.services.WeatherAPI import get_weather_conditions
 from app.services.MareaAPI import get_marea_conditions
 
+import re
+
 
 # --------------------------
 # Config
@@ -63,13 +65,6 @@ def _safe_get(dct, *keys, default=None):
 def _avg(values):
     vals = [v for v in values if v is not None]
     return mean(vals) if vals else 0
-
-def _parse_coords(coord_text: str) -> Tuple[float, float]:
-    """
-    Espera coordenadas como JSON string: '{"lat": -38.0, "lon": -57.6}'
-    """
-    data = json.loads(coord_text) if coord_text else {}
-    return float(data.get("lat")), float(data.get("lon"))
 
 def _get_or_create_proveedor(session: Session, nombre: str) -> int:
     row = session.query(ProveedorDatos).filter(ProveedorDatos.nombre == nombre).one_or_none()
@@ -136,7 +131,8 @@ def insert_forecast_for_spot(session: Session, spot: Spot) -> int:
     Retorna cantidad de registros insertados/actualizados.
     """
     # 1) Resolver lat/lon
-    lat, lon = _parse_coords(spot.coordenadas)
+    lon_str, lat_str = spot.coordenadas.split(",")
+    lat, lon = float(lat_str), float(lon_str)
 
     # 2) Cargar mapas de tipos y proveedores
     tipo_map = _tipo_variable_map(session)  # {nombre_variable -> id_tipo}
@@ -227,7 +223,7 @@ def insert_forecast_for_all_spots(session: Session) -> None:
             print(f"✅ Spot {sp.id} ('{sp.nombre}') → {inserted} upserts.")
         except Exception as e:
             session.rollback()
-            print(f"❌ Error en spot {sp.id} ('{sp.nombre}'): {e}")
+            print(f"❌ Error en spot {sp.id} ('{sp.nombre}') (coords={sp.coordenadas!r}): {e}")
     print("🏁 Ingesta completada.")
 
 
