@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Query
 from random import choice, randint
 from app.services.WeatherLogic import parse_weather_forecast
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.core.dependencies import get_db
+from app.models.models import Spot, DeporteSpot
 
 # Creamos el router específico para este grupo de endpoints
 router = APIRouter(prefix="/spot", tags=["Spots"])
@@ -18,10 +22,29 @@ spots = [
 ]
 
 @router.get("/list")
-async def get_spots():
-    """Devuelve todos los spots disponibles"""
-    return spots
+async def get_spots(db: Session = Depends(get_db)):
+    """Devuelve todos los spots disponibles desde la base de datos"""
+    spots_db = db.query(Spot).filter(Spot.activo == True).all()
 
+    spots = []
+    for spot in spots_db:
+        # Parseamos las coordenadas que guardaste como string JSON, ej: "-37.26,-56.97"
+        lat, lon = None, None
+        if spot.coordenadas:
+            try:
+                lon_str, lat_str = spot.coordenadas.split(",")
+                lat, lon = float(lat_str), float(lon_str)
+            except:
+                pass
+
+        spots.append({
+            "name": spot.nombre,
+            "lat": lat,
+            "lon": lon,
+            "sports": ["kite", "surf"]
+        })
+
+    return spots
 
 @router.get("/weather_average")
 async def get_weather_average(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
