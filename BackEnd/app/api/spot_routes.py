@@ -4,7 +4,8 @@ from app.services.WeatherLogic import parse_weather_forecast
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_db
-from app.models.models import Spot, DeporteSpot
+from datetime import datetime, timedelta
+from app.models.models import VariableMeteorologica, TipoVariableMeteorologica, Spot
 
 # Creamos el router específico para este grupo de endpoints
 router = APIRouter(prefix="/spot", tags=["Spots"])
@@ -46,15 +47,84 @@ async def get_spots(db: Session = Depends(get_db)):
 
     return spots
 
-@router.get("/weather_average")
-async def get_weather_average(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
-    """Devuelve condiciones meteorológicas promedio en el popup"""
-    data_list = parse_weather_forecast(lat, lon)[day]
+def _to_float(val) -> float:
+    try:
+        return float(val)
+    except Exception:
+        return 0.0
 
-    temperature = round((data_list.minTemperature + data_list.maxTemperature) / 2)
-    wind_speed = round(data_list.wind_speed)
-    precipitation = round(data_list.precipitation_qpfCuantity)
-    wave_height = round(data_list.waveHeight)
+@router.get("/weather_average")
+async def get_weather_average(
+    lat: float = Query(...),
+    lon: float = Query(...),
+    day: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    """Devuelve condiciones meteorológicas promedio en el popup (desde la BD)."""
+
+    # 1) Fecha objetivo (día 0 = hoy, en UTC)
+    target_date = (datetime.utcnow() + timedelta(days=day)).date()
+
+    # 2) Resolver el spot por coincidencia EXACTA de coordenadas ("lon,lat")
+    coord_str = f"{lon},{lat}"
+    spot = (
+        db.query(Spot)
+        .filter(Spot.activo == True, Spot.coordenadas == coord_str)
+        .one_or_none()
+    )
+    if not spot:
+        return {}
+
+    # 3) Variables necesarias para este endpoint
+    needed = [
+        "minTemperature",
+        "maxTemperature",
+        "wind_speed",
+        "precipitation_qpfCuantity",
+        "waveHeight",
+    ]
+
+    # 4) Traer valores del día para esas variables (tomamos el último por variable)
+    q = (
+        db.query(VariableMeteorologica.valor, TipoVariableMeteorologica.nombre)
+        .join(
+            TipoVariableMeteorologica,
+            VariableMeteorologica.id_tipo_variable == TipoVariableMeteorologica.id,
+        )
+        .filter(
+            VariableMeteorologica.id_spot == spot.id,
+            VariableMeteorologica.fecha == target_date,
+            TipoVariableMeteorologica.nombre.in_(needed),
+        )
+        .order_by(
+            VariableMeteorologica.ultima_actualizacion.desc(),
+            VariableMeteorologica.id.desc(),
+        )
+    )
+    rows = q.all()
+
+    latest = {}
+    for valor, nombre in rows:
+        if nombre in latest:
+            continue  # ya tomamos la más reciente por el ORDER BY
+        latest[nombre] = valor
+
+    # 5) Calcular promedios y formatear la respuesta
+    tmin = _to_float(latest.get("minTemperature"))
+    tmax = _to_float(latest.get("maxTemperature"))
+    # si falta uno de los dos, usamos el que esté
+    if tmin == 0.0 and tmax == 0.0:
+        temperature = 0
+    elif tmin == 0.0:
+        temperature = round(tmax)
+    elif tmax == 0.0:
+        temperature = round(tmin)
+    else:
+        temperature = round((tmin + tmax) / 2)
+
+    wind_speed = round(_to_float(latest.get("wind_speed")))
+    precipitation = round(_to_float(latest.get("precipitation_qpfCuantity")))
+    wave_height = round(_to_float(latest.get("waveHeight")))
 
     return {
         "temperature_2m": temperature,
@@ -80,7 +150,53 @@ async def get_sportspoints(lat: float = Query(...), lon: float = Query(...), day
 
 
 @router.get("/general_weather")
-async def get_general_weather(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
-    """Devuelve datos generales de clima"""
-    data_list = parse_weather_forecast(lat, lon)
-    return data_list[day]
+async def get_general_weather(
+    lat: float = Query(...),
+    lon: float = Query(...),
+    day: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    """
+    Devuelve {nombreVariable: valor} para el spot cuyas coordenadas coinciden exactamente
+    con las recibidas (formato 'lon,lat') en la fecha 'hoy + day'.
+    """
+    # 1) Fecha objetivo (día 0 = hoy, en UTC)
+    target_date = (datetime.utcnow() + timedelta(days=day)).date()
+
+    # 2) Resolver el spot por coincidencia exacta de coordenadas ("lon,lat")
+    coord_str = f"{lon},{lat}"
+    best_spot = (
+        db.query(Spot)
+        .filter(Spot.activo == True, Spot.coordenadas == coord_str)
+        .one_or_none()
+    )
+
+    if not best_spot:
+        # No hay spot con esas coordenadas exactas
+        return {}
+
+    # 3) Traer variables del día para ese spot, uniendo el nombre de la variable
+    q = (
+        db.query(VariableMeteorologica, TipoVariableMeteorologica)
+        .join(TipoVariableMeteorologica, VariableMeteorologica.id_tipo_variable == TipoVariableMeteorologica.id)
+        .filter(
+            VariableMeteorologica.id_spot == best_spot.id,
+            VariableMeteorologica.fecha == target_date,
+        )
+        .order_by(
+            # Tomamos la más reciente por variable (si hay varias filas por día/proveedor)
+            VariableMeteorologica.ultima_actualizacion.desc(),
+            VariableMeteorologica.id.desc(),
+        )
+    )
+
+    rows = q.all()
+
+    # 4) Armar {nombreVariable: valor} tomando el último por variable
+    result = {}
+    for vm, tv in rows:
+        if tv.nombre in result:
+            continue
+        result[tv.nombre] = vm.valor  # 'valor' es TEXT en tu modelo
+
+    return result
