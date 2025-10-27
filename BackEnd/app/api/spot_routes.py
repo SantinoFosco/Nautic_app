@@ -133,14 +133,6 @@ async def get_weather_average(
         "wave_height": wave_height,
     }
 
-
-@router.get("/recomended_sport")
-async def get_recomended_sport(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
-    """Devuelve un deporte recomendado según las condiciones del día"""
-    choices_list = ["SURF", "KITE", "SURF Y KITE"]
-    return {"sport": choice(choices_list)}
-
-
 @router.get("/sportspoints")
 async def get_sportspoints(lat: float = Query(...), lon: float = Query(...), day: int = Query(...)):
     """Devuelve puntajes de surf y kite según las condiciones"""

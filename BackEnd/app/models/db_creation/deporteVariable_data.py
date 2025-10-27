@@ -44,15 +44,15 @@ DATA = [
     {"id_deporte": 3, "nombre_variable": "uvIndex",                     "umbral_min": 0,   "umbral_max": 9,    "peso": 4,  "estado": "activo", "operador": "between"},
     {"id_deporte": 3, "nombre_variable": "precipitation_probability",   "umbral_min": 0,   "umbral_max": 30,   "peso": 6,  "estado": "activo", "operador": "min"},
     {"id_deporte": 3, "nombre_variable": "precipitation_qpfCuantity",   "umbral_min": 0,   "umbral_max": 3,    "peso": 6,  "estado": "activo", "operador": "min"},
-    {"id_deporte": 3, "nombre_variable": "wind_speed",                  "umbral_min": 0,   "umbral_max": 10,   "peso": 5,  "estado": "activo", "operador": "min"},
-    {"id_deporte": 3, "nombre_variable": "wind_gustValue",              "umbral_min": 0,   "umbral_max": 15,   "peso": 6,  "estado": "activo", "operador": "min"},
+    {"id_deporte": 3, "nombre_variable": "wind_speed",                  "umbral_min": 0,   "umbral_max": 10,   "peso": 8,  "estado": "activo", "operador": "min"},
+    {"id_deporte": 3, "nombre_variable": "wind_gustValue",              "umbral_min": 0,   "umbral_max": 15,   "peso": 8,  "estado": "activo", "operador": "min"},
     {"id_deporte": 3, "nombre_variable": "cloudCover",                  "umbral_min": 0,   "umbral_max": 80,   "peso": 4,  "estado": "activo", "operador": "min"},
     {"id_deporte": 3, "nombre_variable": "maxTemperature",              "umbral_min": 18,  "umbral_max": 35,   "peso": 5,  "estado": "activo", "operador": "between"},
     {"id_deporte": 3, "nombre_variable": "minTemperature",              "umbral_min": 10,  "umbral_max": 30,   "peso": 5,  "estado": "activo", "operador": "between"},
     {"id_deporte": 3, "nombre_variable": "feelsLikeMaxTemperature",     "umbral_min": 18,  "umbral_max": 38,   "peso": 5,  "estado": "activo", "operador": "between"},
     {"id_deporte": 3, "nombre_variable": "feelsLikeMinTemperature",     "umbral_min": 12,  "umbral_max": 30,   "peso": 5,  "estado": "activo", "operador": "between"},
     {"id_deporte": 3, "nombre_variable": "waterTemperature",            "umbral_min": 15,  "umbral_max": 30,   "peso": 6,  "estado": "activo", "operador": "between"},
-    {"id_deporte": 3, "nombre_variable": "waveHeight",                  "umbral_min": 0,   "umbral_max": 1.0,  "peso": 3,  "estado": "activo", "operador": "min"},
+    {"id_deporte": 3, "nombre_variable": "waveHeight",                  "umbral_min": 0,   "umbral_max": 1.0,  "peso": 8,  "estado": "activo", "operador": "min"},
     {"id_deporte": 3, "nombre_variable": "wavePeriod",                  "umbral_min": 0,   "umbral_max": 8,    "peso": 2,  "estado": "activo", "operador": "between"},
 ]
 
