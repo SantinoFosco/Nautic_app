@@ -4,6 +4,9 @@ from app.api import spot_routes, business_owner_routes, admin_routes, test_route
 
 app = FastAPI(title="Nautic API", version="1.0")
 
+# 🔹 Esto crea las tablas automáticamente si no existen
+Base.metadata.create_all(bind=engine)
+
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
@@ -15,6 +18,6 @@ app.add_middleware(
 
 # Registrar endpoints
 app.include_router(spot_routes.router)
-#app.include_router(business_owner_routes.router)
+app.include_router(business_owner_routes.router)
 #app.include_router(admin_routes.router)
 app.include_router(test_routes.router)
