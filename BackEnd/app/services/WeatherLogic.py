@@ -26,6 +26,7 @@ from app.models.models import (
 
 from app.services.WeatherAPI import get_weather_conditions
 from app.services.MareaAPI import get_marea_conditions
+from app.services.SportsWeighting import ponderar_todos_los_deportes
 
 import re
 
@@ -224,6 +225,11 @@ def insert_forecast_for_all_spots(session: Session) -> None:
         except Exception as e:
             session.rollback()
             print(f"❌ Error en spot {sp.id} ('{sp.nombre}') (coords={sp.coordenadas!r}): {e}")
+
+    # 🔄 Después de insertar todas las variables, ponderar deportes
+    print("⚙️ Iniciando ponderación de deportes tras completar la ingesta...")
+    ponderar_todos_los_deportes(session)
+
     print("🏁 Ingesta completada.")
 
 

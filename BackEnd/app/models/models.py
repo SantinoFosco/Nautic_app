@@ -111,14 +111,12 @@ class TipoVariableMeteorologica(Base):
 class DeporteSpot(Base):
     __tablename__ = "deporte_spot"
 
+    id = Column(Integer, primary_key=True, autoincrement=True)
     id_spot = Column(Integer, ForeignKey("spot.id"), nullable=False)
     id_deporte = Column(Integer, ForeignKey("deporte.id"), nullable=False)
     ponderacion = Column(Integer)
+    fecha = Column(Date, nullable=False)
     ultima_actualizacion = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
-
-    __table_args__ = (
-        PrimaryKeyConstraint("id_spot", "id_deporte"),
-    )
 
     # Relaciones
     deporte = relationship("Deporte", back_populates="spots")
