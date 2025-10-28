@@ -72,8 +72,6 @@ def sports_weighting(session: Session, id_spot: int, fecha):
         # 4️⃣ Promedio ponderado
         ponderacion_final = round(ponderacion_total / peso_total, 2) if peso_total else 0
 
-        print(ponderacion_final)
-
         # 5️⃣ Insertar o actualizar en DeporteSpot
         existing = (
             session.query(DeporteSpot)
@@ -91,7 +89,6 @@ def sports_weighting(session: Session, id_spot: int, fecha):
             existing.ponderacion = ponderacion_final
             existing.ultima_actualizacion = func.now()
         else:
-            print("pasamos por el else")
             session.add(
                 DeporteSpot(
                     id_spot=id_spot,

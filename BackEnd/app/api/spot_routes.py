@@ -54,7 +54,7 @@ async def get_weather_average(
     target_date = (datetime.utcnow() + timedelta(days=day)).date()
 
     # 2) Resolver el spot por coincidencia EXACTA de coordenadas ("lon,lat")
-    coord_str = f"{lon},{lat}"
+    coord_str = f"{lon}, {lat}"
     spot = (
         db.query(Spot)
         .filter(Spot.activo == True, Spot.coordenadas == coord_str)
@@ -211,7 +211,7 @@ async def get_general_weather(
     target_date = (datetime.utcnow() + timedelta(days=day)).date()
 
     # 2) Resolver el spot por coincidencia exacta de coordenadas ("lon,lat")
-    coord_str = f"{lon},{lat}"
+    coord_str = f"{lon}, {lat}"
     best_spot = (
         db.query(Spot)
         .filter(Spot.activo == True, Spot.coordenadas == coord_str)
