@@ -1,7 +1,8 @@
-import '../index.css'; 
+import "../index.css";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import surfImg from "../assets/surf.svg"; 
+import surfImg from "../assets/surf.svg";
+import { loginOwner } from "../api/businessOwner"; // 👈 conexión con el backend
 
 export default function Login() {
   const navigate = useNavigate();
@@ -12,16 +13,37 @@ export default function Login() {
     password: "",
   });
 
+  const [error, setError] = useState("");
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login data:", formData);
-    // Lógica de login (por ahora simulada)
-    navigate("/");
+    setError("");
+
+    try {
+      // 🔹 Llamada al backend con los datos del formulario
+      const res = await loginOwner({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      console.log("✅ Login exitoso:", res);
+      alert(res.message);
+
+      // Guardamos el ID del usuario logueado
+      localStorage.setItem("ownerId", String(res.id_dueno));
+      localStorage.setItem("ownerEmail", res.email);
+
+      // Redirige al panel o página principal
+      navigate("/business");
+    } catch (err: any) {
+      console.error("Error en login:", err);
+      setError("Credenciales incorrectas. Verificá tus datos.");
+    }
   };
 
   return (
@@ -65,6 +87,12 @@ export default function Login() {
                 {showPassword ? "🙈" : "👁️"}
               </button>
             </div>
+
+            {error && (
+              <div className="text-red-500 text-sm text-center mt-[-4px]">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"

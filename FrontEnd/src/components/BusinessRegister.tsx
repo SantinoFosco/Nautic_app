@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import businessIllustration from "../assets/business_illustration.svg";
+import { createBusiness } from "../api/businessOwner"; // 👈 conexión al backend
 
 export default function BusinessRegister() {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: "",
     type: "",
@@ -16,20 +18,60 @@ export default function BusinessRegister() {
     description: "",
   });
 
+  const [loading, setLoading] = useState(false);
+
+  // 🔹 Actualiza los campos del formulario
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 🔹 Enviar formulario al backend
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Formulario enviado:", formData);
-    navigate("/business");
+    setLoading(true);
+
+    // Verifica que el dueño esté logueado
+    const id_dueno = localStorage.getItem("ownerId");
+    if (!id_dueno) {
+      alert("No hay un dueño logueado. Iniciá sesión primero.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      // Enviamos los datos al backend FastAPI
+      const res = await createBusiness({
+        id_dueno,
+        nombre_fantasia: formData.name,
+        rubro: formData.type,
+        sitio_web: formData.socials,
+        telefono: formData.phone,
+        email: formData.email,
+        direccion: formData.city,
+        coordenadas: formData.coordinates,
+        horarios: formData.schedule,
+        descripcion: formData.description,
+      });
+
+      console.log("✅ Negocio creado correctamente:", res);
+      alert("Negocio creado correctamente ✅");
+
+      // 🔹 Redirige a la pantalla de éxito
+      navigate("/business-success");
+    } catch (err: any) {
+      console.error("❌ Error al crear negocio:", err);
+      alert("Error al crear el negocio. Verificá los datos.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    // 🔹 grid fija sin scroll, 40/60
+    // 🔹 Layout en dos columnas (azul 40% / formulario 60%)
     <div className="grid w-full h-[calc(100vh-64px)] grid-cols-[40%_60%] overflow-hidden">
-      {/* izquierda */}
+      {/* Columna izquierda: imagen azul */}
       <div className="flex justify-center items-center bg-[#59b7ff]">
         <img
           src={businessIllustration}
@@ -38,18 +80,18 @@ export default function BusinessRegister() {
         />
       </div>
 
-      {/* derecha */}
+      {/* Columna derecha: formulario */}
       <div className="flex justify-center items-center bg-white">
         <div className="w-full max-w-md px-8">
-          {/* encabezado */}
+          {/* Encabezado */}
           <div className="text-center mb-6">
-            <h2 className="text-3xl font-bold text-[#0b2849]">Registrate</h2>
+            <h2 className="text-3xl font-bold text-[#0b2849]">Registrá tu negocio</h2>
             <p className="text-gray-600 text-sm">
               Completá los datos de tu escuela o emprendimiento
             </p>
           </div>
 
-          {/* formulario compacto */}
+          {/* Formulario */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-2">
             <input
               name="name"
@@ -127,13 +169,20 @@ export default function BusinessRegister() {
               className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-2 text-gray-800 focus:ring-2 focus:ring-[#0b2849] outline-none resize-none transition"
             />
 
+            {/* Botones */}
             <div className="flex justify-between gap-4 mt-4">
               <button
                 type="submit"
-                className="bg-[#0b2849] text-white font-semibold py-2 rounded-full hover:bg-[#143b6b] transition w-full"
+                disabled={loading}
+                className={`${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[#0b2849] hover:bg-[#143b6b]"
+                } text-white font-semibold py-2 rounded-full transition w-full`}
               >
-                Enviar solicitud
+                {loading ? "Enviando..." : "Enviar solicitud"}
               </button>
+
               <button
                 type="button"
                 onClick={() => navigate("/business")}
@@ -148,4 +197,3 @@ export default function BusinessRegister() {
     </div>
   );
 }
-

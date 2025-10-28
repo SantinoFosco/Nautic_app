@@ -148,7 +148,7 @@ async def get_sportspoints(
     target_date = (datetime.utcnow() + timedelta(days=day-1)).date()
 
     # 2) Resolver spot por coincidencia EXACTA de coordenadas ("lon,lat")
-    coord_str = f"{lat}, {lon}"
+    coord_str = f"{lon}, {lat}"
     spot = (
         db.query(Spot)
         .filter(Spot.activo == True, Spot.coordenadas == coord_str)

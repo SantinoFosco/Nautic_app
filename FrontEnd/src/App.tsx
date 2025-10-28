@@ -8,10 +8,14 @@ import Business from "./components/BusinessEmptyState";
 import BusinessRegister from "./components/BusinessRegister";
 import BusinessSuccess from "./components/BusinessSuccess";
 
-
 function Layout() {
   const location = useLocation();
-  const isFullScreen = location.pathname === "/register" || location.pathname === "/login";
+
+  // 🔹 Páginas que deben mostrarse en "pantalla completa" (sin fondo gris)
+  const isFullScreen =
+    location.pathname === "/register" ||
+    location.pathname === "/login" ||
+    location.pathname === "/business-register";
 
   return (
     <div
@@ -21,8 +25,10 @@ function Layout() {
           : "flex flex-col min-h-screen bg-[#f7fafc]"
       }
     >
+      {/* 🔹 Navbar visible en todas las páginas */}
       <Navbar />
 
+      {/* 🔹 Contenedor principal */}
       <main
         className={
           isFullScreen
@@ -36,9 +42,8 @@ function Layout() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/business" element={<Business />} />
-          <Route path="/business/register" element={<BusinessRegister />} />
+          <Route path="/business-register" element={<BusinessRegister />} />
           <Route path="/business-success" element={<BusinessSuccess />} />
-
         </Routes>
       </main>
     </div>
