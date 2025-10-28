@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import spot_routes, business_owner_routes, admin_routes, test_routes
+from app.core.database import Base, engine
 
 app = FastAPI(title="Nautic API", version="1.0")
 
