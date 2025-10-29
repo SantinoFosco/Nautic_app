@@ -49,13 +49,27 @@ def login_owner(email: str, password: str, db: Session = Depends(get_db)):
     if not user or user.hashed_password != password:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
-    return {"message": "Inicio de sesión exitoso", "id_dueno": user.id_dueno, "email": user.email}
+    # Verificar si el usuario tiene un negocio asociado
+    have_business = (
+        db.query(Negocio)
+        .filter(Negocio.id_dueno == user.id_dueno)
+        .first()
+        is not None
+    )
+
+    return {
+        "message": "Inicio de sesión exitoso",
+        "id_dueno": user.id_dueno,
+        "email": user.email,
+        "haveBusiness": have_business,
+    }
+
 
 
 # ------------------------------------------------------
 # Ver perfil del dueño
 # ------------------------------------------------------
-@router.get("/me")
+@router.get("/profile")
 def get_my_profile(id_dueno: int, db: Session = Depends(get_db)):
     user = db.query(Usuario).filter(Usuario.id_dueno == id_dueno).first()
     if not user:
@@ -74,7 +88,7 @@ def get_my_profile(id_dueno: int, db: Session = Depends(get_db)):
 # ------------------------------------------------------
 # Actualizar perfil del dueño
 # ------------------------------------------------------
-@router.put("/me")
+@router.put("/update_profile")
 def update_my_profile(
     id_dueno: int,
     nombre: str = None,
@@ -142,40 +156,55 @@ def create_business(
 # ------------------------------------------------------
 # Listar negocios del dueño
 # ------------------------------------------------------
-@router.get("/businesses")
-def list_my_businesses(id_dueno: int, db: Session = Depends(get_db)):
-    negocios = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).all()
+@router.get("/my_business")
+def list_my_business(id_dueno: int, db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
     return [
         {
-            "id_negocio": n.id_negocio,
-            "nombre_fantasia": n.nombre_fantasia,
-            "rubro": n.rubro,
-            "activo": n.activo
+            "nombre_fantasia": negocio.nombre_fantasia,
+            "rubro": negocio.rubro,
+            "sitio_web": negocio.sitio_web,
+            "telefono": negocio.telefono,
+            "email": negocio.email,
+            "direccion": negocio.direccion,
+            "horarios": negocio.horarios,
+            "descripcion": negocio.descripcion,
+            "activo": negocio.activo
         }
-        for n in negocios
     ]
-
 
 # ------------------------------------------------------
 # Actualizar negocio
 # ------------------------------------------------------
-@router.put("/business/{id_negocio}")
+@router.put("/update_business")
 def update_business(
-    id_negocio: int,
+    id_dueno: int,
     nombre_fantasia: str = None,
+    rubro: str = None,
+    sitio_web: str = None,
     telefono: str = None,
+    email: str = None,
+    direccion: str = None,
     horarios: str = None,
     descripcion: str = None,
     db: Session = Depends(get_db)
 ):
-    negocio = db.query(Negocio).filter(Negocio.id_negocio == id_negocio).first()
+    negocio = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
     if not negocio:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 
     if nombre_fantasia:
         negocio.nombre_fantasia = nombre_fantasia
+    if rubro:
+        negocio.rubro = rubro
+    if sitio_web:
+        negocio.sitio_web = sitio_web
     if telefono:
         negocio.telefono = telefono
+    if email:
+        negocio.email = email
+    if direccion:
+        negocio.direccion = direccion
     if horarios:
         negocio.horarios = horarios
     if descripcion:
@@ -184,13 +213,25 @@ def update_business(
     db.commit()
     return {"message": "Negocio actualizado correctamente"}
 
+# ------------------------------------------------------
+# Activar negocio
+# ------------------------------------------------------
+@router.put("/activate_business")
+def deactivate_business(id_dueno: int, db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
+    if not negocio:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    negocio.activo = True
+    db.commit()
+    return {"message": "Negocio activado correctamente"}
 
 # ------------------------------------------------------
 # Desactivar negocio
 # ------------------------------------------------------
-@router.delete("/business/{id_negocio}")
-def deactivate_business(id_negocio: int, db: Session = Depends(get_db)):
-    negocio = db.query(Negocio).filter(Negocio.id_negocio == id_negocio).first()
+@router.put("/desactivate_business")
+def deactivate_business(id_dueno: int, db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
     if not negocio:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 
