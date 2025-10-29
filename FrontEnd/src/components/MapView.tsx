@@ -32,7 +32,7 @@ export default function MapView() {
   // === 1️⃣ Traer todos los spots (solo una vez) ===
   useEffect(() => {
     const fetchSpots = async () => {
-      const res = await fetch("http://127.0.0.1:8000/spots");
+      const res = await fetch("http://127.0.0.1:8000/spot/list");
       const backendSpots = await res.json();
       setSpots(backendSpots);
     };
@@ -63,7 +63,7 @@ export default function MapView() {
 
     setLoadingWeather(true);
     try {
-      const url = `http://127.0.0.1:8000/spots/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
+      const url = `http://127.0.0.1:8000/spot/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
       const res = await fetch(url);
       const json = await res.json();
       setData((prev) => ({ ...prev, [spot.name]: json }));

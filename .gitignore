@@ -1,10 +1,4 @@
 # Git ignore file for Nautic_app
-
-# Ignore specific backend file
-BackEnd/WeatherAPI.py
-BackEnd/MareaAPI.py
-BackEnd/uvicorn.log
-
 # Typical Python ignores
 __pycache__/
 *.py[cod]

@@ -4,16 +4,22 @@ import { ArrowLeft, Thermometer, Wind, Waves, Cloud, Sun } from "lucide-react";
 
 type Sport = "surf" | "kite";
 type Spot = { name: string; lat: number; lon: number; sports: Sport[] };
+type sportsScore = { sport: string; score: number };
 
 type WeatherDay = {
-  uvIndex?: number;
-  precipitation_probability?: number;
-  wind_speed?: number;
-  cloudCover?: number;
-  maxTemperature?: number;
-  minTemperature?: number;
+  wavePeriod?: number;
   waveHeight?: number;
+  waterTemperature?: number;
+  feelsLikeMinTemperature?: number;
+  feelsLikeMaxTemperature?: number;
+  minTemperature?: number;
+  maxTemperature?: number;
+  cloudCover?: number;
+  wind_gustValue?: number;
+  wind_speed?: number;
   precipitation_qpfCuantity?: number;
+  precipitation_probability?: number;
+  uvIndex?: number;
 };
 
 export default function ForecastPage() {
@@ -23,10 +29,13 @@ export default function ForecastPage() {
   const [data, setData] = useState<WeatherDay | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [kayakScore, setKayakScore] = useState<sportsScore | null>(null);
+  const [surfScore, setSurfScore]   = useState<sportsScore | null>(null);
+  const [kiteScore, setKiteScore]   = useState<sportsScore | null>(null);
 
   // 🟦 Traer lista de spots desde el backend
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/spots")
+    fetch("http://127.0.0.1:8000/spot/list")
       .then((r) => r.json())
       .then(setSpots)
       .catch(() => console.warn("No se pudieron cargar los spots"));
@@ -44,7 +53,7 @@ export default function ForecastPage() {
       try {
         setLoading(true);
         const res = await fetch(
-          `http://127.0.0.1:8000/general_weather?lat=${spot.lat}&lon=${spot.lon}&day=${day}`
+          `http://127.0.0.1:8000/spot/general_weather?lat=${spot.lat}&lon=${spot.lon}&day=${day}`
         );
         if (!res.ok) throw new Error("Error al obtener datos");
         const json = await res.json();
@@ -56,6 +65,53 @@ export default function ForecastPage() {
       }
     })();
   }, [spot, day]);
+
+  useEffect(() => {
+    if (!spot) return;
+    const url = `http://127.0.0.1:8000/spot/sportspoints?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
+    (async () => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+
+        // Normalizar payload: admite { sport, score } o { deporte, ponderacion }
+        const raw = Array.isArray(json?.scores) ? json.scores : [];
+        const list: sportsScore[] = raw
+          .map((r: any) => ({
+            sport: String(r.sport ?? r.deporte ?? "").toLowerCase(),
+            score: Number(r.score ?? r.ponderacion ?? 0),
+          }))
+          .filter((r) => r.sport && Number.isFinite(r.score));
+
+        // Helper para encontrar por nombre (con sinónimos)
+        const find = (...names: string[]) => {
+          const s = list.find((x) => names.includes(x.sport));
+          return s ? { sport: s.sport, score: s.score } : { sport: names[0], score: 0 };
+        };
+
+        setKayakScore(find("kayak"));
+        setSurfScore(find("surf"));
+        setKiteScore(find("kite", "kitesurf"));
+      } catch (e) {
+        console.error("[sportspoints] error:", e);
+        // Defaults seguros
+        setKayakScore({ sport: "kayak",   score: 0 });
+        setSurfScore({  sport: "surf",    score: 0 });
+        setKiteScore({  sport: "kitesurf",score: 0 });
+      }
+    })();
+  }, [spot, day]);
+
+
+  function scoreToPalette(score: number) {
+    if (score >= 85) return "emerald"; // excelente
+    if (score >= 70) return "lime";
+    if (score >= 55) return "yellow";
+    if (score >= 40) return "orange";
+    return "red";                      // malo
+  }
+
 
   if (!spot) {
     return (
@@ -84,6 +140,7 @@ export default function ForecastPage() {
           <div className="flex gap-2">
             <Chip>Surf</Chip>
             <Chip>Kite</Chip>
+            <Chip>Kayak</Chip>
           </div>
         </div>
 
@@ -94,11 +151,11 @@ export default function ForecastPage() {
           </p>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <SummaryCard title="Condiciones actuales" value={qualifyNow(data)} color="blue" />
-            <SummaryCard title="Puntuación Surf" value="7.0/10" color="teal" />
-            <SummaryCard title="Puntuación Kite" value="7.5/10" color="emerald" />
-            <SummaryCard title="Actualizado" value="Ahora mismo" color="slate" />
+            <SummaryCard title="Puntuación Kayak" value={`${kayakScore?.score ?? 0}/100`} color="emerald" />
+            <SummaryCard title="Puntuación Surf"  value={`${surfScore?.score ?? 0}/100`}  color="emerald" />
+            <SummaryCard title="Puntuación Kite"  value={`${kiteScore?.score ?? 0}/100`}  color="emerald" />
           </div>
+
         </div>
       </div>
 
@@ -115,12 +172,12 @@ export default function ForecastPage() {
         <SectionTitle>Condiciones Detalladas</SectionTitle>
         <div className="grid md:grid-cols-3 gap-5">
           <BigCard icon={<Waves className="w-5 h-5" />} title="Oleaje">
-            <KV k="Altura" v={`${data.waveHeight} m`} />
-            <KV k="Periodo" v={`${data.wavePeriod ?? 8}s`} />
+            <KV k="Altura"  v={`${Number(data.waveHeight ?? 0).toFixed(1)} m`} />
+            <KV k="Periodo" v={`${Number(data.wavePeriod ?? 0).toFixed(0)} s`} />
           </BigCard>
           <BigCard icon={<Wind className="w-5 h-5" />} title="Viento">
-            <KV k="Velocidad" v={`${(data.wind_speed ?? 0 * 3.6).toFixed(1)} km/h`} />
-            <KV k="Ráfagas" v={`${((data.wind_speed ?? 0) * 1.3 * 3.6).toFixed(1)} km/h`} />
+            <KV k="Velocidad" v={`${data.wind_speed} km/h`} />
+            <KV k="Ráfagas"  v={`${data.wind_gustValue} km/h`} />
           </BigCard>
           <BigCard icon={<Thermometer className="w-5 h-5" />} title="Temperatura">
             <KV k="Max" v={`${data.maxTemperature ?? 0}°C`} />

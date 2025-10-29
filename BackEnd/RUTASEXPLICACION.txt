@@ -1,0 +1,14 @@
+cosas faltantes
+
+-la contraseña para crear register_owner no tiene autentificación ni jwt nada(solo para probar)
+-por el momento no hay perfil de administrador! falta lo de que un negocio solicita al administrador la autorización del negocio. para probar las rutas y que funcione modificar negocio y eliminar negocio lo hice sin administrador.
+-tengo duda de como relacionaba el deporte con el negocio, faltaría algo ahí
+- tmb falta lo de relacionarlas con el front
+
+COMO PROBAR
+
+1. ejecutar el backend como estaba en el README.md
+2. luego, una vez aparezca Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+3. ir a http://127.0.0.1:8000/docs 
+4. ahí vas a poder probar las rutas(de business owner)
+5. para ver donde se almacenan, fijarse en el doc aparte
