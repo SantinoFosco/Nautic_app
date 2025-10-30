@@ -8,7 +8,6 @@ sports_data = [
     {"nombre": "Kayak", "descripcion": "Deporte acuático que utiliza una pequeña embarcación llamada kayak para navegar."},
 ]
 
-# Función para generar el código del tipo "SPR0001"
 def generar_codigo(prefix, id_num):
     return f"{prefix}{str(id_num).zfill(4)}"
 
@@ -18,9 +17,8 @@ def seed_sports():
         print("🏄‍♂️ Insertando deportes en la base de datos...")
 
         for i, sport_data in enumerate(sports_data, start=1):
-            codigo = generar_codigo("SPR", i)
             nuevo_deporte = Deporte(
-                codigo=codigo,
+                codigo = generar_codigo("SPT", i),
                 nombre=sport_data["nombre"],
                 descripcion=sport_data["descripcion"],
                 activo=True

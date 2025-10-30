@@ -132,8 +132,8 @@ def insert_forecast_for_spot(session: Session, spot: Spot) -> int:
     Retorna cantidad de registros insertados/actualizados.
     """
     # 1) Resolver lat/lon
-    lon_str, lat_str = spot.coordenadas.split(",")
-    lat, lon = float(lat_str), float(lon_str)
+    lat = spot.lat
+    lon = spot.lon
 
     # 2) Cargar mapas de tipos y proveedores
     tipo_map = _tipo_variable_map(session)  # {nombre_variable -> id_tipo}

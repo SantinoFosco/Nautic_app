@@ -1,19 +1,19 @@
 from app.core.database import SessionLocal
 from app.models.models import Spot
+from decimal import Decimal
 
 # Lista de spots a insertar
 spots_data = [
-    {"nombre": "Islas del Delta", "tipo": "Isla", "coordenadas": "-58.5085, -34.4455"},
-    {"nombre": "San Clemente del Tuyú", "tipo": "Playa", "coordenadas": "-56.7233, -36.3567"},
-    {"nombre": "San Bernardo", "tipo": "Playa", "coordenadas": "-56.7, -36.7"},
-    {"nombre": "Villa Gesell", "tipo": "Playa", "coordenadas": "-56.9729, -37.2645"},
-    {"nombre": "Mar del Plata", "tipo": "Playa", "coordenadas": "-57.5426, -38.0055"},
-    {"nombre": "Necochea", "tipo": "Playa", "coordenadas": "-58.739, -38.5545"},
-    {"nombre": "Claromecó", "tipo": "Playa", "coordenadas": "-60.0833, -38.8667"},
-    {"nombre": "Monte Hermoso", "tipo": "Playa", "coordenadas": "-61.2833, -38.9833"},
+    {"nombre": "Islas del Delta", "tipo": "Isla", "lat": "-34.4455", "lon": "-58.5085"},
+    {"nombre": "San Clemente del Tuyú", "tipo": "Playa", "lat": "-36.3567", "lon": "-56.7233"},
+    {"nombre": "San Bernardo", "tipo": "Playa", "lat": "-36.7", "lon": "-56.7"},
+    {"nombre": "Villa Gesell", "tipo": "Playa", "lat": "-37.2645", "lon": "-56.9729"},
+    {"nombre": "Mar del Plata", "tipo": "Playa", "lat": "-38.0055", "lon": "-57.5426"},
+    {"nombre": "Necochea", "tipo": "Playa", "lat": "-38.5545", "lon": "-58.739"},
+    {"nombre": "Claromecó", "tipo": "Playa", "lat": "-38.8667", "lon": "-60.0833"},
+    {"nombre": "Monte Hermoso", "tipo": "Playa", "lat": "-38.9833", "lon": "-61.2833"},
 ]
 
-# Función para generar el código del tipo "SPT0001"
 def generar_codigo(prefix, id_num):
     return f"{prefix}{str(id_num).zfill(4)}"
 
@@ -23,12 +23,12 @@ def seed_spots():
         print("🌊 Insertando spots en la base de datos...")
 
         for i, spot_data in enumerate(spots_data, start=1):
-            codigo = generar_codigo("SPT", i)
             nuevo_spot = Spot(
-                codigo=codigo,
+                codigo=generar_codigo("SPT", i),
                 nombre=spot_data["nombre"],
                 tipo=spot_data["tipo"],
-                coordenadas=spot_data["coordenadas"],
+                lat=Decimal(spot_data["lat"]),
+                lon=Decimal(spot_data["lon"]),
                 activo=True
             )
             db.add(nuevo_spot)

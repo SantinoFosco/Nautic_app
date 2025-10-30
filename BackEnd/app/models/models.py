@@ -43,7 +43,8 @@ class Spot(Base):
     codigo = Column(String(15), unique=True, nullable=False)
     nombre = Column(String(30), nullable=False)
     tipo = Column(String(20))
-    coordenadas = Column(String(100))  # Guardamos como texto (ej. JSON)
+    lat = Column(Numeric(10, 6), nullable=False)
+    lon = Column(Numeric(10, 6), nullable=False)
     activo = Column(Boolean, default=True)
 
     # Relaciones
@@ -146,17 +147,18 @@ class DeporteVariable(Base):
     deporte = relationship("Deporte", back_populates="variables")
     
 # ------------------------------------------------------
-# Tabla Usuario (Dueño)
+# Tabla Usuario
 # ------------------------------------------------------
 class Usuario(Base):
     __tablename__ = "usuario"
 
-    id_dueno = Column(Integer, Sequence("usuario_id_seq"), primary_key=True, autoincrement=True)
+    id = Column(Integer, Sequence("usuario_id_seq"), primary_key=True, autoincrement=True)
     nombre = Column(String(50), nullable=False)
     apellido = Column(String(50), nullable=False)
     telefono = Column(String(30))
     email = Column(String(100), unique=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    tipo_usuario = Column(String(20), default="owner")
     fecha_creacion = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
 
     # Relaciones
@@ -170,14 +172,15 @@ class Negocio(Base):
     __tablename__ = "negocio"
 
     id_negocio = Column(Integer, Sequence("negocio_id_seq"), primary_key=True, autoincrement=True)
-    id_dueno = Column(Integer, ForeignKey("usuario.id_dueno"), nullable=False)  # Suponiendo que hay una tabla Usuario o Dueño
+    id_dueno = Column(Integer, ForeignKey("usuario.id"), nullable=False)
     nombre_fantasia = Column(String(100), nullable=False)
     rubro = Column(String(50))
     sitio_web = Column(String(255))
     telefono = Column(String(30))
     email = Column(String(100))
     direccion = Column(String(255))
-    coordenadas = Column(String(100))  # Ejemplo: '{"lat": -34.6, "lon": -58.4}'
+    lat = Column(Numeric(10, 6), nullable=False)
+    lon = Column(Numeric(10, 6), nullable=False)
     horarios = Column(String(255))  
     activo = Column(Boolean, default=True)
     activo_hasta = Column(Date)
@@ -201,5 +204,3 @@ class NegocioDeporte(Base):
     __table_args__ = (
         PrimaryKeyConstraint("id_negocio", "id_deporte"),
     )
-
-

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_db
 from datetime import datetime, timedelta
-from app.models.models import VariableMeteorologica, TipoVariableMeteorologica, Spot, Deporte, DeporteSpot
+from app.models.models import VariableMeteorologica, TipoVariableMeteorologica, Spot, Deporte, DeporteSpot, Negocio
 from sqlalchemy import and_
 
 # Creamos el router específico para este grupo de endpoints
@@ -30,16 +30,33 @@ async def get_spots(db: Session = Depends(get_db)):
             "name": spot.nombre,
             "lat": lat,
             "lon": lon,
-            "sports": ["kite", "surf"]
+            "type": "spot"
         })
 
     return spots
 
-def _to_float(val) -> float:
-    try:
-        return float(val)
-    except Exception:
-        return 0.0
+@router.get("/business_list")
+async def get_business_spots(db: Session = Depends(get_db)):
+    business_db = db.query(Negocio).filter(Negocio.activo == True).all()
+
+    business = []
+    for business in business_db:
+        lat, lon = None, None
+        if business.coordenadas:
+            try:
+                lon_str, lat_str = business.coordenadas.split(",")
+                lat, lon = float(lat_str), float(lon_str)
+            except:
+                pass
+
+        business.append({
+            "name": business.nombre,
+            "lat": lat,
+            "lon": lon,
+            "type": "business"
+        })
+
+    return business
 
 @router.get("/weather_average")
 async def get_weather_average(
@@ -98,8 +115,8 @@ async def get_weather_average(
         latest[nombre] = valor
 
     # 5) Calcular promedios y formatear la respuesta
-    tmin = _to_float(latest.get("minTemperature"))
-    tmax = _to_float(latest.get("maxTemperature"))
+    tmin = float(latest.get("minTemperature"))
+    tmax = float(latest.get("maxTemperature"))
     # si falta uno de los dos, usamos el que esté
     if tmin == 0.0 and tmax == 0.0:
         temperature = 0
@@ -110,9 +127,9 @@ async def get_weather_average(
     else:
         temperature = round((tmin + tmax) / 2)
 
-    wind_speed = round(_to_float(latest.get("wind_speed")))
-    precipitation = round(_to_float(latest.get("precipitation_qpfCuantity")))
-    wave_height = round(_to_float(latest.get("waveHeight")))
+    wind_speed = round(float(latest.get("wind_speed")))
+    precipitation = round(float(latest.get("precipitation_qpfCuantity")))
+    wave_height = round(float(latest.get("waveHeight")))
 
     return {
         "temperature_2m": temperature,
@@ -154,7 +171,7 @@ async def get_sportspoints(
         .filter(Spot.activo == True, Spot.coordenadas == coord_str)
         .one_or_none()
     )
-    print(spot.nombre if spot else "No spot found")
+     
     if not spot:
         # coherente con tus otros endpoints: devolver vacío si no existe
         return {"date": str(target_date), "spot": None, "scores": [], "best": None}

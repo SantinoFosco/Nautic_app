@@ -7,7 +7,6 @@ provider_data = [
     {"nombre": "Google Maps Platform", "url_base": "https://weather.googleapis.com/v1/forecast/days:lookup", "politica_licencia": "https://developers.google.com/maps/documentation/weather"},
 ]
 
-# Función para generar el código del tipo "PRV0001"
 def generar_codigo(prefix, id_num):
     return f"{prefix}{str(id_num).zfill(4)}"
 
@@ -17,9 +16,8 @@ def seed_providers():
         print("📡 Insertando proveedores de datos en la base de datos...")
 
         for i, provider in enumerate(provider_data, start=1):
-            codigo = generar_codigo("PRV", i)
             nuevo_proveedor = ProveedorDatos(
-                codigo=codigo,
+                codigo=generar_codigo("PRV", i),
                 nombre=provider["nombre"],
                 url_base=provider["url_base"],
                 politica_licencia=provider["politica_licencia"]

@@ -1,0 +1,37 @@
+from app.core.database import SessionLocal
+from app.models.models import Usuario
+
+# Lista de deportes a insertar
+users_data = [
+    {"nombre": "User", "apellido": "user", "telefono": "1234567890", "email": "user@user.com", "hashed_password": "user", "tipo_usuario": "owner"},
+    {"nombre": "Admin", "apellido": "Admin", "telefono": "0123456789", "email": "admin@admin.com", "hashed_password": "admin", "tipo_usuario": "admin"}
+]
+
+
+def seed_users():
+    db = SessionLocal()
+    try:
+        print("👤 Insertando usuarios en la base de datos...")
+
+        for i, user_data in enumerate(users_data, start=1):
+            nuevo_usuario = Usuario(
+                nombre=user_data["nombre"],
+                apellido=user_data["apellido"],
+                telefono=user_data["telefono"],
+                email=user_data["email"],
+                hashed_password=user_data["hashed_password"],
+                tipo_usuario=user_data["tipo_usuario"]
+            )
+            db.add(nuevo_usuario)
+
+        db.commit()
+        print("✅ Usuarios insertados correctamente.")
+
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error al insertar usuarios: {e}")
+    finally:
+        db.close()
+
+if __name__ == "__main__":
+    seed_users()
