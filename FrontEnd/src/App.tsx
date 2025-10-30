@@ -7,6 +7,7 @@ import Login from "./components/Login";
 import Business from "./components/BusinessEmptyState";
 import BusinessRegister from "./components/BusinessRegister";
 import BusinessSuccess from "./components/BusinessSuccess";
+import BusinessEdit from "./components/BusinessEdit";
 
 function Layout() {
   const location = useLocation();
@@ -44,6 +45,7 @@ function Layout() {
           <Route path="/business" element={<Business />} />
           <Route path="/business-register" element={<BusinessRegister />} />
           <Route path="/business-success" element={<BusinessSuccess />} />
+          <Route path="/business/edit" element={<BusinessEdit />} />
         </Routes>
       </main>
     </div>

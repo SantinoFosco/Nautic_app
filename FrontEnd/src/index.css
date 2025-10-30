@@ -69,3 +69,72 @@ body {
   background-color: white;
   overflow-x: hidden;
 }
+
+* ====== Crear/Editar negocio (tal cual PDF) ====== */
+.biz-card {
+  border: 1px solid #E9EFF6;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.biz-card-title {
+  font-weight: 600;
+  color: #0b2849;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.biz-input {
+  width: 100%;
+  border: 1px solid #E3ECF3;
+  background: #FFFFFF;
+  border-radius: 9999px;
+  padding: 12px 20px;
+  color: #0b2849;
+  outline: none;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+
+.biz-input::placeholder { color: #97A3B6; }
+
+.biz-input:focus {
+  border-color: #0D3B66;
+  box-shadow: 0 0 0 3px rgba(13, 59, 102, 0.12);
+}
+
+.biz-select {
+  width: 100%;
+  border: 1px solid #E3ECF3;
+  background: #FFFFFF;
+  border-radius: 9999px;
+  padding: 12px 20px;
+  color: #0b2849;
+  outline: none;
+  appearance: none;
+  background-image: none;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+
+.biz-select:focus {
+  border-color: #0D3B66;
+  box-shadow: 0 0 0 3px rgba(13, 59, 102, 0.12);
+}
+
+.biz-textarea {
+  width: 100%;
+  border: 1px solid #E3ECF3;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 14px 16px;
+  color: #0b2849;
+  outline: none;
+  resize: vertical;
+  min-height: 150px;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.biz-textarea::placeholder { color: #97A3B6; }
+.biz-textarea:focus {
+  border-color: #0D3B66;
+  box-shadow: 0 0 0 3px rgba(13, 59, 102, 0.12);
+}

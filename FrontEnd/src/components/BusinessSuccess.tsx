@@ -23,7 +23,7 @@ export default function BusinessSuccess() {
         </p>
 
         <button
-          onClick={() => navigate("/business")}
+          onClick={() => navigate("/business/edit")}
           className="bg-[#0b2849] text-white font-semibold py-2 px-8 rounded-full hover:bg-[#143b6b] transition"
         >
           Ir a mi panel
