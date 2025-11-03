@@ -51,14 +51,14 @@ def login_owner(email: str, password: str, db: Session = Depends(get_db)):
     # Verificar si el usuario tiene un negocio asociado
     have_business = (
         db.query(Negocio)
-        .filter(Negocio.id_dueno == user.id_dueno)
+        .filter(Negocio.id_dueno == user.id)
         .first()
         is not None
     )
 
     return {
         "message": "Inicio de sesión exitoso",
-        "id_dueno": user.id_dueno,
+        "id_dueno": user.id,
         "email": user.email,
         "haveBusiness": have_business,
     }

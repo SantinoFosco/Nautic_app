@@ -4,59 +4,80 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_db
 from datetime import datetime, timedelta
-from app.models.models import VariableMeteorologica, TipoVariableMeteorologica, Spot, Deporte, DeporteSpot, Negocio
+from app.models.models import VariableMeteorologica, TipoVariableMeteorologica, Spot, Deporte, DeporteSpot, Negocio, NegocioDeporte
 from sqlalchemy import and_
 
 # Creamos el router específico para este grupo de endpoints
 router = APIRouter(prefix="/spot", tags=["Spots"])
 
 @router.get("/list")
-async def get_spots(db: Session = Depends(get_db)):
+async def get_spots(day: int = Query(...), db: Session = Depends(get_db)):
     """Devuelve todos los spots disponibles desde la base de datos"""
     spots_db = db.query(Spot).filter(Spot.activo == True).all()
+    target_date = (datetime.utcnow() + timedelta(days=day)).date()  # corregido
 
     spots = []
     for spot in spots_db:
-        # Parseamos las coordenadas que guardaste como string JSON, ej: "-37.26,-56.97"
-        lat, lon = None, None
-        if spot.coordenadas:
-            try:
-                lon_str, lat_str = spot.coordenadas.split(",")
-                lat, lon = float(lat_str), float(lon_str)
-            except:
-                pass
+        rows = (
+            db.query(Deporte.nombre, DeporteSpot.ponderacion)
+            .join(Deporte, Deporte.id == DeporteSpot.id_deporte)
+            .filter(
+                and_(
+                    DeporteSpot.id_spot == spot.id,
+                    DeporteSpot.fecha == target_date,
+                )
+            )
+            .order_by(Deporte.nombre.asc())
+            .all()
+        )
+
+        scores = [{"sport": n, "score": float(p or 0)} for (n, p) in rows]
+        best = None
+        if scores:
+            best_item = max(scores, key=lambda x: x["score"])
+            best = best_item["sport"]
 
         spots.append({
             "name": spot.nombre,
-            "lat": lat,
-            "lon": lon,
-            "type": "spot"
+            "lat": float(spot.lat),
+            "lon": float(spot.lon),
+            "type": spot.tipo,
+            "best_sport": best
         })
 
     return spots
 
 @router.get("/business_list")
 async def get_business_spots(db: Session = Depends(get_db)):
+    """Devuelve todos los negocios activos con sus coordenadas y deportes asociados"""
     business_db = db.query(Negocio).filter(Negocio.activo == True).all()
 
-    business = []
-    for business in business_db:
-        lat, lon = None, None
-        if business.coordenadas:
-            try:
-                lon_str, lat_str = business.coordenadas.split(",")
-                lat, lon = float(lat_str), float(lon_str)
-            except:
-                pass
+    business_list = []
 
-        business.append({
-            "name": business.nombre,
+    for b in business_db:
+        # Convertir coordenadas (lat, lon) desde Numeric a float
+        lat = float(b.lat) if b.lat is not None else None
+        lon = float(b.lon) if b.lon is not None else None
+
+        # Obtener nombres de deportes asociados al negocio
+        deportes = (
+            db.query(Deporte.nombre)
+            .join(NegocioDeporte, Deporte.id == NegocioDeporte.id_deporte)
+            .filter(NegocioDeporte.id_negocio == b.id_negocio)
+            .all()
+        )
+
+        deportes_nombres = [d[0] for d in deportes]  # convertir a lista simple
+
+        business_list.append({
+            "name": b.nombre_fantasia,
             "lat": lat,
             "lon": lon,
-            "type": "business"
+            "type": "business",
+            "sports": deportes_nombres
         })
 
-    return business
+    return business_list
 
 @router.get("/weather_average")
 async def get_weather_average(
@@ -71,10 +92,9 @@ async def get_weather_average(
     target_date = (datetime.utcnow() + timedelta(days=day)).date()
 
     # 2) Resolver el spot por coincidencia EXACTA de coordenadas ("lon,lat")
-    coord_str = f"{lon}, {lat}"
     spot = (
         db.query(Spot)
-        .filter(Spot.activo == True, Spot.coordenadas == coord_str)
+        .filter(Spot.activo == True, Spot.lat == lat, Spot.lon == lon)
         .one_or_none()
     )
     if not spot:
@@ -150,67 +170,48 @@ async def get_sportspoints(
     coinciden exactamente con (lon,lat) en la fecha 'hoy + day'.
 
     Respuesta:
-    {
-      "date": "2025-10-30",
-      "spot": { "id": 1, "name": "...", "lat": -37.26, "lon": -56.97 },
-      "scores": [
-        {"sport": "Kitesurf", "score": 83.5},
-        {"sport": "Surf", "score": 71.0},
-        {"sport": "Kayak", "score": 64.0}
-      ],
-      "best": {"sport": "Kitesurf", "score": 83.5}
-    }
+    [
+      {"sport": "Kitesurf", "score": 83.5},
+      {"sport": "Surf", "score": 71.0},
+      {"sport": "Kayak", "score": 64.0}
+    ]
     """
-    # 1) Fecha objetivo (día 0 = hoy, en UTC)
-    target_date = (datetime.utcnow() + timedelta(days=day-1)).date()
+    # 1) Calcular fecha objetivo
+    target_date = (datetime.utcnow() + timedelta(days=day - 1)).date()
 
-    # 2) Resolver spot por coincidencia EXACTA de coordenadas ("lon,lat")
-    coord_str = f"{lon}, {lat}"
+    # 2) Buscar spot exacto por coordenadas (ahora usando Numeric → convertir a Decimal)
+    from decimal import Decimal
     spot = (
         db.query(Spot)
-        .filter(Spot.activo == True, Spot.coordenadas == coord_str)
+        .filter(
+            Spot.activo == True,
+            Spot.lat == Decimal(str(lat)),
+            Spot.lon == Decimal(str(lon)),
+        )
         .one_or_none()
     )
-     
-    if not spot:
-        # coherente con tus otros endpoints: devolver vacío si no existe
-        return {"date": str(target_date), "spot": None, "scores": [], "best": None}
 
-    # 3) Traer ponderaciones de ese spot en esa fecha, uniendo con Deporte para el nombre
+    if not spot:
+        return []  # si no existe el spot, devolver lista vacía
+
+    # 3) Obtener las ponderaciones de ese spot en esa fecha
     rows = (
         db.query(Deporte.nombre, DeporteSpot.ponderacion)
         .join(Deporte, Deporte.id == DeporteSpot.id_deporte)
         .filter(
             and_(
                 DeporteSpot.id_spot == spot.id,
-                DeporteSpot.fecha == target_date,   # importante: distinguir por fecha
+                DeporteSpot.fecha == target_date,
             )
         )
         .order_by(Deporte.nombre.asc())
         .all()
     )
 
-    # 4) Formatear respuesta
+    # 4) Formatear lista de scores
     scores = [{"sport": n, "score": float(p or 0)} for (n, p) in rows]
-    best = None
-    if scores:
-        best_item = max(scores, key=lambda x: x["score"])
-        best = {"sport": best_item["sport"], "score": best_item["score"]}
 
-    # Parsear lat/lon desde el string guardado (igual que en /spot/list)
-    spot_lat, spot_lon = None, None
-    try:
-        lon_str, lat_str = spot.coordenadas.split(",")
-        spot_lat, spot_lon = float(lat_str), float(lon_str)
-    except Exception:
-        pass
-
-    return {
-        "date": str(target_date),
-        "spot": {"id": spot.id, "name": spot.nombre, "lat": spot_lat, "lon": spot_lon},
-        "scores": scores,
-        "best": best,
-    }
+    return scores
 
 
 @router.get("/general_weather")
@@ -227,11 +228,10 @@ async def get_general_weather(
     # 1) Fecha objetivo (día 0 = hoy, en UTC)
     target_date = (datetime.utcnow() + timedelta(days=day)).date()
 
-    # 2) Resolver el spot por coincidencia exacta de coordenadas ("lon,lat")
-    coord_str = f"{lon}, {lat}"
+    # 2) Resolver el spot por coincidencia exacta de coordenadas
     best_spot = (
         db.query(Spot)
-        .filter(Spot.activo == True, Spot.coordenadas == coord_str)
+        .filter(Spot.activo == True, Spot.lat == lat, Spot.lon == lon)
         .one_or_none()
     )
 

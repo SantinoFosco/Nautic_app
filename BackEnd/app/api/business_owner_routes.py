@@ -1,3 +1,4 @@
+from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -11,12 +12,12 @@ router = APIRouter(prefix="/business_owner", tags=["Business Owner"])
 # ------------------------------------------------------
 @router.get("/profile")
 def get_my_profile(id_dueno: int, db: Session = Depends(get_db)):
-    user = db.query(Usuario).filter(Usuario.id_dueno == id_dueno).first()
+    user = db.query(Usuario).filter(Usuario.id == id_dueno).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     return {
-        "id_dueno": user.id_dueno,
+        "id_dueno": user.id,
         "nombre": user.nombre,
         "apellido": user.apellido,
         "telefono": user.telefono,
@@ -36,7 +37,7 @@ def update_my_profile(
     telefono: str = None,
     db: Session = Depends(get_db)
 ):
-    user = db.query(Usuario).filter(Usuario.id_dueno == id_dueno).first()
+    user = db.query(Usuario).filter(Usuario.id == id_dueno).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
@@ -63,29 +64,32 @@ def create_business(
     telefono: str = None,
     email: str = None,
     direccion: str = None,
-    coordenadas: str = None,
+    latitud: float = None,
+    longitud: float = None,
     horarios: str = None,
     descripcion: str = None,
     db: Session = Depends(get_db)
 ):
-    dueno = db.query(Usuario).filter(Usuario.id_dueno == id_dueno).first()
+    dueno = db.query(Usuario).filter(Usuario.id == id_dueno).first()
     if not dueno:
         raise HTTPException(status_code=404, detail="Dueño no encontrado")
 
     nuevo_negocio = Negocio(
-        id_dueno=id_dueno,
+        id_dueno=dueno.id,
         nombre_fantasia=nombre_fantasia,
         rubro=rubro,
         sitio_web=sitio_web,
         telefono=telefono,
         email=email,
         direccion=direccion,
-        coordenadas=coordenadas,
+        lat=Decimal(str(latitud)) if latitud is not None else None,
+        lon=Decimal(str(longitud)) if longitud is not None else None,
         horarios=horarios,
         descripcion=descripcion,
         activo=True,
         fecha_creacion=datetime.utcnow()
     )
+
 
     db.add(nuevo_negocio)
     db.commit()
@@ -107,6 +111,8 @@ def list_my_business(id_dueno: int, db: Session = Depends(get_db)):
             "telefono": negocio.telefono,
             "email": negocio.email,
             "direccion": negocio.direccion,
+            "lat": float(negocio.lat) if negocio.lat is not None else None,
+            "lon": float(negocio.lon) if negocio.lon is not None else None,
             "horarios": negocio.horarios,
             "descripcion": negocio.descripcion,
             "activo": negocio.activo
