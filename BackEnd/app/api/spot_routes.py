@@ -41,7 +41,7 @@ async def get_spots(day: int = Query(...), db: Session = Depends(get_db)):
             "name": spot.nombre,
             "lat": float(spot.lat),
             "lon": float(spot.lon),
-            "type": spot.tipo,
+            "type": "spot",
             "best_sport": best
         })
 
@@ -78,6 +78,23 @@ async def get_business_spots(db: Session = Depends(get_db)):
         })
 
     return business_list
+
+@router.get("/business_details")
+async def get_business_details(lat: float = Query(...), lon: float = Query(...), db: Session = Depends(get_db)):
+    business = (db.query(Negocio).filter(Negocio.activo == True, Negocio.lat == lat, Negocio.lon == lon).first())
+
+    if not business:
+        return {}
+    return {
+        "nombre_fantasia": business.nombre_fantasia,
+        "rubro": business.rubro,
+        "sitio_web": business.sitio_web,
+        "telefono": business.telefono,
+        "email": business.email,
+        "direccion": business.direccion,
+        "horarios": business.horarios,
+        "descripcion": business.descripcion
+    }
 
 @router.get("/weather_average")
 async def get_weather_average(

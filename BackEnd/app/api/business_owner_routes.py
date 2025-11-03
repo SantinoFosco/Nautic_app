@@ -130,7 +130,6 @@ def update_business(
     sitio_web: str = None,
     telefono: str = None,
     email: str = None,
-    direccion: str = None,
     horarios: str = None,
     descripcion: str = None,
     db: Session = Depends(get_db)
@@ -149,8 +148,6 @@ def update_business(
         negocio.telefono = telefono
     if email:
         negocio.email = email
-    if direccion:
-        negocio.direccion = direccion
     if horarios:
         negocio.horarios = horarios
     if descripcion:
