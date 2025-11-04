@@ -4,13 +4,15 @@ import { Thermometer, Wind, CloudRain, Waves } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { useNavigate } from "react-router-dom";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
 type Sport = "surf" | "kite";
 
 type Spot = {
   name: string;
   lat: number;
   lon: number;
-  sports: Sport[];
+  sports: Sport[]; // derivado de best_sport del backend
 };
 
 type WeatherData = {
@@ -22,27 +24,65 @@ type WeatherData = {
 
 export default function MapView() {
   const [spots, setSpots] = useState<Spot[]>([]);
-  const [data, setData] = useState<Record<string, WeatherData>>({});
+  // cache por día y por spot: data[day][spotName] -> WeatherData
+  const [data, setData] = useState<Record<number, Record<string, WeatherData>>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [day, setDay] = useState(0);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const navigate = useNavigate();
 
-  // === 1️⃣ Traer todos los spots (solo una vez) ===
+  // 🔹 Un solo effect: trae spots para el día actual y (si hay spot seleccionado) prefetch del clima de ese spot
   useEffect(() => {
-    const fetchSpots = async () => {
-      const res = await fetch("http://127.0.0.1:8000/spot/list");
-      const backendSpots = await res.json();
-      setSpots(backendSpots);
-    };
-    fetchSpots();
-  }, []);
+    let cancel = false;
 
-  // === 2️⃣ Filtro por deporte ===
+    (async () => {
+      try {
+        // Traer spots del backend (best_sport es string)
+        const res = await fetch(`${API_BASE}/spot/list?day=${day}`);
+        const arr = await res.json();
+
+        const list: Spot[] = (Array.isArray(arr) ? arr : []).map((r: any) => ({
+          name: String(r.name ?? r.nombre ?? ""),
+          lat: Number(r.lat),
+          lon: Number(r.lon),
+          sports: bestToSports(r.best_sport), // 👈 derivamos el array desde el string
+        }));
+
+        setSpots(list);
+
+        // Prefetch del clima si hay un spot seleccionado y no está cacheado para ESTE día
+        if (!selected) return;
+        const s = list.find((sp) => sp.name === selected);
+        if (!s) return;
+        if (data[day]?.[s.name]) return;
+
+        setLoadingWeather(true);
+        const w = await fetch(`${API_BASE}/spot/weather_average?lat=${s.lat}&lon=${s.lon}&day=${day}`);
+        const weather = await w.json();
+        if (cancel) return;
+
+        setData((prev) => ({
+          ...prev,
+          [day]: { ...(prev[day] || {}), [s.name]: weather },
+        }));
+      } catch (e) {
+        console.error("Error cargando spots/weather", e);
+        setSpots([]);
+      } finally {
+        setLoadingWeather(false);
+      }
+    })();
+
+    return () => {
+      cancel = true;
+    };
+  }, [day, selected]);
+
+  // === Filtro por deporte ===
   const visibleSpots = useMemo(() => {
     if (selectedSports.length === 0) return spots;
-    return spots.filter((s) => s.sports.some((sport) => selectedSports.includes(sport)));
+    return spots.filter((s) => s.sports?.some((sport) => selectedSports.includes(sport)));
   }, [selectedSports, spots]);
 
   const selectedSpot = visibleSpots.find((s) => s.name === selected);
@@ -54,22 +94,28 @@ export default function MapView() {
   };
   const resetSports = () => setSelectedSports([]);
 
-  // === 3️⃣ Nuevo: pedir clima solo al click ===
+  // === Pedir clima al click (usa cache por día) ===
   const handleSpotClick = async (spot: Spot) => {
     setSelected(spot.name);
 
-    // si ya tenemos los datos, no vuelvas a pedirlos
-    if (data[spot.name]) return;
+    // si ya tenemos los datos para ESTE día, no volvemos a pedirlos
+    if (data[day]?.[spot.name]) return;
 
     setLoadingWeather(true);
     try {
-      const url = `http://127.0.0.1:8000/spot/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
+      const url = `${API_BASE}/spot/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
       const res = await fetch(url);
       const json = await res.json();
-      setData((prev) => ({ ...prev, [spot.name]: json }));
+      setData((prev) => ({
+        ...prev,
+        [day]: { ...(prev[day] || {}), [spot.name]: json },
+      }));
     } catch (err) {
       console.error("Error al cargar clima", err);
-      setData((prev) => ({ ...prev, [spot.name]: {} }));
+      setData((prev) => ({
+        ...prev,
+        [day]: { ...(prev[day] || {}), [spot.name]: {} as WeatherData },
+      }));
     } finally {
       setLoadingWeather(false);
     }
@@ -132,7 +178,7 @@ export default function MapView() {
 
         {/* === MARCADORES === */}
         {visibleSpots.map((spot) => {
-          const d = data[spot.name];
+          const d = data[day]?.[spot.name];
           const wind = d?.wind_speed_10m ?? 0;
           const waves = d?.wave_height ?? 0;
           const rain = d?.precipitation ?? 0;
@@ -169,11 +215,11 @@ export default function MapView() {
             <div className="w-[260px] space-y-2">
               <h3 className="font-semibold text-[#0D3B66]">{selectedSpot.name}</h3>
 
-              {loadingWeather && !data[selectedSpot.name] ? (
+              {loadingWeather && !data[day]?.[selectedSpot.name] ? (
                 <div className="flex justify-center py-4">
                   <span className="loading loading-spinner loading-md text-[#0D3B66]"></span>
                 </div>
-              ) : data[selectedSpot.name] ? (
+              ) : data[day]?.[selectedSpot.name] ? (
                 <>
                   <div className="text-xs text-slate-500">
                     Día {day} • Deporte:{" "}
@@ -183,10 +229,26 @@ export default function MapView() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
-                    <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.name].temperature_2m}°C`} />
-                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.name].wind_speed_10m} m/s`} />
-                    <Info icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />} label="Lluvia prom." value={`${data[selectedSpot.name].precipitation} mm`} />
-                    <Info icon={<Waves className="w-4 h-4 text-[#0D3B66]" />} label="Olas prom." value={`${data[selectedSpot.name].wave_height} m`} />
+                    <Info
+                      icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Temp prom."
+                      value={`${data[day]?.[selectedSpot.name]?.temperature_2m ?? "-"}°C`}
+                    />
+                    <Info
+                      icon={<Wind className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Viento prom."
+                      value={`${data[day]?.[selectedSpot.name]?.wind_speed_10m ?? "-"} m/s`}
+                    />
+                    <Info
+                      icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Lluvia prom."
+                      value={`${data[day]?.[selectedSpot.name]?.precipitation ?? "-"} mm`}
+                    />
+                    <Info
+                      icon={<Waves className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Olas prom."
+                      value={`${data[day]?.[selectedSpot.name]?.wave_height ?? "-"} m`}
+                    />
                   </div>
                 </>
               ) : (
@@ -236,9 +298,21 @@ function aptColor(label: AptLabel) {
   return label === "excelente" ? "#16a34a" : label === "bueno" ? "#f59e0b" : "#dc2626";
 }
 
-function pickSportForSpot(selectedSports: string[], spotSports: Sport[]): Sport {
-  if (selectedSports.length === 1 && spotSports.includes(selectedSports[0] as Sport)) {
+function pickSportForSpot(selectedSports: string[], spotSports?: Sport[]): Sport {
+  const available: Sport[] =
+    Array.isArray(spotSports) && spotSports.length ? spotSports : (["surf", "kite"] as Sport[]);
+
+  if (selectedSports.length === 1 && available.includes(selectedSports[0] as Sport)) {
     return selectedSports[0] as Sport;
   }
-  return spotSports[0];
+  return available[0]; // fallback determinista
+}
+
+// 👇 convierte el string best_sport del backend a un arreglo Sport[]
+function bestToSports(best: any): Sport[] {
+  const s = String(best ?? "").trim().toLowerCase();
+  if (s.includes("kite")) return ["kite"];
+  if (s.includes("surf")) return ["surf"];
+  // fallback si viene vacío o desconocido: mostramos ambos
+  return ["surf", "kite"];
 }

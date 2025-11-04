@@ -1,4 +1,4 @@
-import { apiFormPOST } from "./client";
+import {apiGET, apiFormPOST } from "./client";
 
 
 // 🔹 Registro de dueño (ya lo tenías)

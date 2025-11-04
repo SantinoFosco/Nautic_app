@@ -35,14 +35,16 @@ export default function ForecastPage() {
 
   // 🟦 Traer lista de spots desde el backend
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/spot/list")
+    fetch(`http://127.0.0.1:8000/spot/list?day=${day}`)
       .then((r) => r.json())
-      .then(setSpots)
-      .catch(() => console.warn("No se pudieron cargar los spots"));
-  }, []);
+      .then((json) => setSpots(Array.isArray(json) ? json : [])) // ← siempre array
+      .catch(() => setSpots([]));
+  }, [day]);
 
   const spot = useMemo(
-    () => spots.find((s) => s.name.toLowerCase() === decodeURIComponent(name).toLowerCase()),
+    () => (Array.isArray(spots) ? spots : []).find(
+      (s: any) => String(s.name ?? s.nombre ?? s.codigo).toLowerCase() === decodeURIComponent(name).toLowerCase()
+    ) as Spot | undefined,
     [spots, name]
   );
 
@@ -68,37 +70,31 @@ export default function ForecastPage() {
 
   useEffect(() => {
     if (!spot) return;
-    const url = `http://127.0.0.1:8000/spot/sportspoints?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
     (async () => {
       try {
-        const res = await fetch(url);
+        const res = await fetch(
+          `http://127.0.0.1:8000/spot/sportspoints?lat=${spot.lat}&lon=${spot.lon}&day=${day}`
+        );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
 
-        // Normalizar payload: admite { sport, score } o { deporte, ponderacion }
-        const raw = Array.isArray(json?.scores) ? json.scores : [];
-        const list: sportsScore[] = raw
-          .map((r: any) => ({
-            sport: String(r.sport ?? r.deporte ?? "").toLowerCase(),
-            score: Number(r.score ?? r.ponderacion ?? 0),
-          }))
-          .filter((r) => r.sport && Number.isFinite(r.score));
+        // AHORA es un array directo: [{ sport, score }, ...]
+        const raw: Array<{ sport: string; score: number }> = await res.json();
 
-        // Helper para encontrar por nombre (con sinónimos)
-        const find = (...names: string[]) => {
-          const s = list.find((x) => names.includes(x.sport));
-          return s ? { sport: s.sport, score: s.score } : { sport: names[0], score: 0 };
-        };
+        const list: sportsScore[] = raw.map((r) => ({
+          sport: String(r.sport).trim().toLowerCase(),
+          score: Number(r.score ?? 0),
+        }));
 
-        setKayakScore(find("kayak"));
-        setSurfScore(find("surf"));
-        setKiteScore(find("kite", "kitesurf"));
+        const by: Record<string, number> = Object.fromEntries(list.map(x => [x.sport, x.score]));
+
+        setKayakScore({ sport: "kayak",    score: by["kayak"]    ?? 0 });
+        setSurfScore({  sport: "surf",     score: by["surf"]     ?? 0 });
+        setKiteScore({  sport: "kitesurf", score: by["kitesurf"] ?? by["kite"] ?? 0 });
       } catch (e) {
         console.error("[sportspoints] error:", e);
-        // Defaults seguros
-        setKayakScore({ sport: "kayak",   score: 0 });
-        setSurfScore({  sport: "surf",    score: 0 });
-        setKiteScore({  sport: "kitesurf",score: 0 });
+        setKayakScore({ sport: "kayak",    score: 0 });
+        setSurfScore({  sport: "surf",     score: 0 });
+        setKiteScore({  sport: "kitesurf", score: 0 });
       }
     })();
   }, [spot, day]);

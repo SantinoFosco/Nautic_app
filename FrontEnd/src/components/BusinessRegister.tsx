@@ -10,7 +10,8 @@ export default function BusinessRegister() {
     name: "",
     type: "",
     city: "",
-    coordinates: "",
+    lat: "",
+    lon: "",
     phone: "",
     email: "",
     socials: "",
@@ -50,7 +51,8 @@ export default function BusinessRegister() {
         telefono: formData.phone,
         email: formData.email,
         direccion: formData.city,
-        coordenadas: formData.coordinates,
+        latitud: formData.latitud,
+        longitud:formData.longitud,
         horarios: formData.schedule,
         descripcion: formData.description,
       });
@@ -124,9 +126,16 @@ export default function BusinessRegister() {
               className="input validator py-2"
             />
             <input
-              name="coordinates"
-              placeholder="Coordenadas (lat, long)"
-              value={formData.coordinates}
+              name="latitud"
+              placeholder="Latitud"
+              value={formData.latitud}
+              onChange={handleChange}
+              className="input validator py-2"
+            />
+            <input
+              name="longitud"
+              placeholder="Longitud"
+              value={formData.longitud}
               onChange={handleChange}
               className="input validator py-2"
             />
