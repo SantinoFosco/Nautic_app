@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import spot_routes, business_owner_routes, admin_routes, test_routes
+from app.api import spot_routes, business_owner_routes, admin_routes, test_routes, user_routes
 from app.core.database import Base, engine
 
 app = FastAPI(title="Nautic API", version="1.0")
@@ -20,5 +20,6 @@ app.add_middleware(
 # Registrar endpoints
 app.include_router(spot_routes.router)
 app.include_router(business_owner_routes.router)
+app.include_router(user_routes.router)
 #app.include_router(admin_routes.router)
 app.include_router(test_routes.router)

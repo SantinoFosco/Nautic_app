@@ -35,7 +35,7 @@ def register_owner(
     db.commit()
     db.refresh(nuevo_dueno)
 
-    return {"message": "Dueño registrado correctamente", "id_dueno": nuevo_dueno.id_dueno}
+    return {"message": "Dueño registrado correctamente", "id_dueno": nuevo_dueno}
 
 
 # ------------------------------------------------------
