@@ -10,7 +10,7 @@ export async function registerOwner(payload: {
   password: string;
 }) {
   return apiFormPOST<{ message: string; id_dueno: number }>(
-    "/business_owner/register",
+    "/user/register",
     payload
   );
 }
@@ -18,7 +18,7 @@ export async function registerOwner(payload: {
 // 🔹 Login de dueño (nuevo)
 export async function loginOwner(payload: { email: string; password: string }) {
   return apiFormPOST<{ message: string; id_dueno: number; email: string }>(
-    "/business_owner/login",
+    "/user/login",
     payload
   );
 }
@@ -28,7 +28,7 @@ export async function loginOwner(payload: { email: string; password: string }) {
 export async function listMyBusinesses(id_dueno: string) {
   return apiGET<
     { id_negocio: number; nombre_fantasia: string; rubro: string; activo: boolean }[]
-  >(`/business_owner/businesses?id_dueno=${id_dueno}`);
+  >(`/my_business?id_dueno=${id_dueno}`);
 }
 
 import { apiFormPOST } from "./client";
@@ -47,7 +47,7 @@ export async function createBusiness(payload: {
   descripcion?: string;
 }) {
   return apiFormPOST<{ message: string; id_negocio: number }>(
-    "/business_owner/business",
+    "/business_owner/new_business",
     payload
   );
 }

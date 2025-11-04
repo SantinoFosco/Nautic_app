@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: nautic_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nauticdb}
+      POSTGRES_USER: ${POSTGRES_USER:-nautic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nautic_pass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nautic} -d ${POSTGRES_DB:-nauticdb}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build:
+      context: ./BackEnd
+      dockerfile: Dockerfile
+    container_name: nautic_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      WEATHERLOGIC_DEBUG: "1"
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-nautic}:${POSTGRES_PASSWORD:-nautic_pass}@db:5432/${POSTGRES_DB:-nauticdb}
+      STORMGLASS_API_KEY: ${STORMGLASS_API_KEY:-changeme}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-changeme}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  # Desarrollo (hot reload)
+  frontend:
+    image: node:20-alpine
+    container_name: nautic_frontend_dev
+    working_dir: /app
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://127.0.0.1:8000}
+    command: sh -c "npm ci && npm run dev -- --host"
+    volumes:
+      - ./FrontEnd:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+#
+#  # Producción (Nginx sirve el build y proxy /api → backend)
+#  web:
+#    profiles: ["prod"]
+#    build:
+#      context: ./FrontEnd
+#      dockerfile: Dockerfile
+#      args:
+#        VITE_API_URL: /api
+#    container_name: nautic_frontend_prod
+#    depends_on:
+#      - backend
+#    ports:
+#      - "8080:80"
+#    restart: unless-stopped
+
+volumes:
+  db_data:
