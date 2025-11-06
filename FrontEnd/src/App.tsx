@@ -4,12 +4,12 @@ import MapView from "./components/MapView";
 import ForecastPage from "./components/ForecastPage";
 import Register from "./components/Register";
 import Login from "./components/Login";
-import Business from "./components/BusinessEmptyState";
 import BusinessRegister from "./components/BusinessRegister";
 import BusinessSuccess from "./components/BusinessSuccess";
 import BusinessEdit from "./components/BusinessEdit";
 import AdminDashboard from "./pages/AdminDashboard";
 import BusinessPanel from "./components/BusinessPanel";
+import BusinessEmptyState from "./components/BusinessEmptyState";
 
 
 function Layout() {
@@ -47,8 +47,9 @@ function Layout() {
           <Route path="/login" element={<Login />} />
           <Route path="/business-register" element={<BusinessRegister />} />
           <Route path="/business-success" element={<BusinessSuccess />} />
-          <Route path="/business/edit" element={<BusinessEdit />} />
+          <Route path="/business-edit" element={<BusinessEdit />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/business-empty" element={<BusinessEmptyState />} />
           <Route path="/business" element={<BusinessPanel />} />
         </Routes>
       </main>

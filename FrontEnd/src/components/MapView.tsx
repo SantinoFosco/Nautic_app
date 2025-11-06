@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup } from "react-leaflet";
-import { Thermometer, Wind, CloudRain, Waves, Store } from "lucide-react";
+import {
+  Thermometer,
+  Wind,
+  CloudRain,
+  Waves,
+  Clock,
+  Phone,
+  MapPin,
+  Info as InfoIcon,
+} from "lucide-react";
 import "leaflet/dist/leaflet.css";
-import { useNavigate } from "react-router-dom";
 
 type Sport = "surf" | "kite";
 
@@ -13,6 +21,16 @@ type Spot = {
   type: "spot" | "business";
   sports?: Sport[];
   best_sport?: string;
+
+  // Campos extra de negocio
+  nombre_fantasia?: string;
+  rubro?: string;
+  direccion?: string;
+  telefono?: string;
+  email?: string;
+  sitio_web?: string;
+  horarios?: string;
+  descripcion?: string;
 };
 
 type WeatherData = {
@@ -29,7 +47,6 @@ export default function MapView() {
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [day, setDay] = useState(0);
   const [loadingWeather, setLoadingWeather] = useState(false);
-  const navigate = useNavigate();
 
   // === 1️⃣ Traer spots + negocios ===
   useEffect(() => {
@@ -71,7 +88,6 @@ export default function MapView() {
     setSelected(spot.name);
 
     if (spot.type === "business") {
-      // Para negocios, no pedimos clima
       setData((prev) => ({
         ...prev,
         [spot.name]: {},
@@ -79,7 +95,6 @@ export default function MapView() {
       return;
     }
 
-    // si ya tenemos los datos, no volver a pedirlos
     if (data[spot.name]) return;
 
     setLoadingWeather(true);
@@ -159,7 +174,7 @@ export default function MapView() {
           const rain = d?.precipitation ?? 0;
           const sport = pickSportForSpot(selectedSports, spot.sports || []);
           const apt = calcAptitude(sport, wind, waves, rain);
-          const color = spot.type === "business" ? "#2563eb" : aptColor(apt); // 🟦 negocios en azul
+          const color = spot.type === "business" ? "#2563eb" : aptColor(apt);
 
           return (
             <CircleMarker
@@ -188,14 +203,41 @@ export default function MapView() {
             eventHandlers={{ remove: () => setSelected(null) }}
           >
             <div className="w-[260px] space-y-2">
-              <h3 className="font-semibold text-[#0D3B66]">
-                {selectedSpot.name}
+              <h3 className="font-bold text-[#0D3B66] text-lg">
+                {selectedSpot.nombre_fantasia || selectedSpot.name}
               </h3>
 
               {selectedSpot.type === "business" ? (
-                <p className="text-sm text-gray-600">
-                  🏪 Negocio registrado en la zona.
-                </p>
+                <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
+                  {selectedSpot.rubro && (
+                    <Info
+                      icon={<InfoIcon className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Rubro"
+                      value={selectedSpot.rubro}
+                    />
+                  )}
+                  {selectedSpot.telefono && (
+                    <Info
+                      icon={<Phone className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Teléfono"
+                      value={selectedSpot.telefono}
+                    />
+                  )}
+                  {selectedSpot.horarios && (
+                    <Info
+                      icon={<Clock className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Horarios"
+                      value={selectedSpot.horarios}
+                    />
+                  )}
+                  {selectedSpot.direccion && (
+                    <Info
+                      icon={<MapPin className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Dirección"
+                      value={selectedSpot.direccion}
+                    />
+                  )}
+                </div>
               ) : loadingWeather && !data[selectedSpot.name] ? (
                 <div className="flex justify-center py-4">
                   <span className="loading loading-spinner loading-md text-[#0D3B66]"></span>
@@ -210,41 +252,20 @@ export default function MapView() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
-                    <Info
-                      icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />}
-                      label="Temp prom."
-                      value={`${data[selectedSpot.name].temperature_2m ?? 0}°C`}
-                    />
-                    <Info
-                      icon={<Wind className="w-4 h-4 text-[#0D3B66]" />}
-                      label="Viento prom."
-                      value={`${data[selectedSpot.name].wind_speed_10m ?? 0} m/s`}
-                    />
-                    <Info
-                      icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />}
-                      label="Lluvia prom."
-                      value={`${data[selectedSpot.name].precipitation ?? 0} mm`}
-                    />
-                    <Info
-                      icon={<Waves className="w-4 h-4 text-[#0D3B66]" />}
-                      label="Olas prom."
-                      value={`${data[selectedSpot.name].wave_height ?? 0} m`}
-                    />
+                    <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.name].temperature_2m ?? 0}°C`} />
+                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.name].wind_speed_10m ?? 0} m/s`} />
+                    <Info icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />} label="Lluvia prom." value={`${data[selectedSpot.name].precipitation ?? 0} mm`} />
+                    <Info icon={<Waves className="w-4 h-4 text-[#0D3B66]" />} label="Olas prom." value={`${data[selectedSpot.name].wave_height ?? 0} m`} />
                   </div>
                 </>
               ) : (
                 <p className="text-gray-400 text-sm">Sin datos disponibles</p>
               )}
 
-              {selectedSpot.type === "spot" && (
-                <button
-                  className="w-full bg-[#0D3B66] text-white py-2 rounded-md text-sm font-medium hover:bg-[#0b3355] transition"
-                  onClick={() =>
-                    navigate(`/forecast/${encodeURIComponent(selectedSpot.name)}`)
-                  }
-                >
-                  Ver Pronóstico Completo
-                </button>
+              {selectedSpot.descripcion && (
+                <p className="mt-3 text-gray-600 text-xs italic text-center">
+                  “{selectedSpot.descripcion}”
+                </p>
               )}
             </div>
           </Popup>
@@ -257,10 +278,10 @@ export default function MapView() {
 /* === COMPONENTE INFO === */
 function Info({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center justify-center text-center">
       {icon}
       <span className="text-[11px] text-gray-500">{label}</span>
-      <span className="text-[13px] font-medium text-[#0D3B66]">{value}</span>
+      <span className="text-[13px] font-medium text-[#0D3B66] break-words">{value}</span>
     </div>
   );
 }
