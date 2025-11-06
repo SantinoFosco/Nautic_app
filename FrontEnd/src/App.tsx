@@ -8,6 +8,9 @@ import Business from "./components/BusinessEmptyState";
 import BusinessRegister from "./components/BusinessRegister";
 import BusinessSuccess from "./components/BusinessSuccess";
 import BusinessEdit from "./components/BusinessEdit";
+import AdminDashboard from "./pages/AdminDashboard";
+import BusinessPanel from "./components/BusinessPanel";
+
 
 function Layout() {
   const location = useLocation();
@@ -42,10 +45,11 @@ function Layout() {
           <Route path="/forecast/:name" element={<ForecastPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/business" element={<Business />} />
           <Route path="/business-register" element={<BusinessRegister />} />
           <Route path="/business-success" element={<BusinessSuccess />} />
           <Route path="/business/edit" element={<BusinessEdit />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/business" element={<BusinessPanel />} />
         </Routes>
       </main>
     </div>

@@ -2,7 +2,7 @@ import "../index.css";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import kayakImg from "../assets/kayak.svg";
-import { registerOwner } from "../api/businessOwner"; // 👈 conexión con el back
+import { registerOwner } from "../api/businessOwner"; // ✅ conexión con el back
 
 export default function Register() {
   const navigate = useNavigate();
@@ -52,24 +52,26 @@ export default function Register() {
     try {
       // 🔹 Llamada al backend
       const res = await registerOwner({
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        email: formData.email,
-        telefono: formData.telefono,
-        password: formData.contraseña, // el back espera "password"
+        nombre: formData.nombre.trim(),
+        apellido: formData.apellido.trim(),
+        email: formData.email.trim(),
+        telefono: formData.telefono.trim(),
+        password: formData.contraseña.trim(),
       });
 
       console.log("✅ Registro exitoso:", res);
       alert(res.message);
 
       // 🔹 Guardamos info útil en localStorage
-      localStorage.setItem("ownerId", String(res.id_dueno));
+      // ⚠️ Ajuste: el backend devuelve un objeto completo dentro de "id_dueno"
+      localStorage.setItem("ownerId", String(res.id_dueno.id));
       localStorage.setItem("ownerEmail", formData.email);
-      localStorage.setItem("ownerName", formData.nombre); // 👈 esta línea es nueva
+      localStorage.setItem("ownerName", formData.nombre);
 
-      // Redirige al login
+      // 🔹 Redirige al login
       navigate("/login");
     } catch (err: any) {
+      console.error("❌ Error en registro:", err);
       alert(err.message || "Error al registrar el usuario");
     }
   };

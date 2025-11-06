@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Thermometer, Wind, Waves, Cloud, Sun } from "lucide-react";
+import { ArrowLeft, Thermometer, Wind, Waves, Cloud } from "lucide-react";
 
 type Sport = "surf" | "kite";
 type Spot = { name: string; lat: number; lon: number; sports: Sport[] };
@@ -30,19 +30,22 @@ export default function ForecastPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [kayakScore, setKayakScore] = useState<sportsScore | null>(null);
-  const [surfScore, setSurfScore]   = useState<sportsScore | null>(null);
-  const [kiteScore, setKiteScore]   = useState<sportsScore | null>(null);
+  const [surfScore, setSurfScore] = useState<sportsScore | null>(null);
+  const [kiteScore, setKiteScore] = useState<sportsScore | null>(null);
 
   // 🟦 Traer lista de spots desde el backend
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/spot/list")
+    fetch("http://127.0.0.1:8000/spot/list?day=0")
       .then((r) => r.json())
       .then(setSpots)
       .catch(() => console.warn("No se pudieron cargar los spots"));
   }, []);
 
   const spot = useMemo(
-    () => spots.find((s) => s.name.toLowerCase() === decodeURIComponent(name).toLowerCase()),
+    () =>
+      spots.find(
+        (s) => s.name.toLowerCase() === decodeURIComponent(name).toLowerCase()
+      ),
     [spots, name]
   );
 
@@ -66,6 +69,7 @@ export default function ForecastPage() {
     })();
   }, [spot, day]);
 
+  // 🟦 Traer puntuaciones de deportes
   useEffect(() => {
     if (!spot) return;
     const url = `http://127.0.0.1:8000/spot/sportspoints?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
@@ -76,7 +80,7 @@ export default function ForecastPage() {
         const json = await res.json();
 
         // Normalizar payload: admite { sport, score } o { deporte, ponderacion }
-        const raw = Array.isArray(json?.scores) ? json.scores : [];
+        const raw = Array.isArray(json?.scores) ? json.scores : json;
         const list: sportsScore[] = raw
           .map((r: any) => ({
             sport: String(r.sport ?? r.deporte ?? "").toLowerCase(),
@@ -84,7 +88,6 @@ export default function ForecastPage() {
           }))
           .filter((r) => r.sport && Number.isFinite(r.score));
 
-        // Helper para encontrar por nombre (con sinónimos)
         const find = (...names: string[]) => {
           const s = list.find((x) => names.includes(x.sport));
           return s ? { sport: s.sport, score: s.score } : { sport: names[0], score: 0 };
@@ -95,28 +98,20 @@ export default function ForecastPage() {
         setKiteScore(find("kite", "kitesurf"));
       } catch (e) {
         console.error("[sportspoints] error:", e);
-        // Defaults seguros
-        setKayakScore({ sport: "kayak",   score: 0 });
-        setSurfScore({  sport: "surf",    score: 0 });
-        setKiteScore({  sport: "kitesurf",score: 0 });
+        setKayakScore({ sport: "kayak", score: 0 });
+        setSurfScore({ sport: "surf", score: 0 });
+        setKiteScore({ sport: "kitesurf", score: 0 });
       }
     })();
   }, [spot, day]);
 
-
-  function scoreToPalette(score: number) {
-    if (score >= 85) return "emerald"; // excelente
-    if (score >= 70) return "lime";
-    if (score >= 55) return "yellow";
-    if (score >= 40) return "orange";
-    return "red";                      // malo
-  }
-
-
   if (!spot) {
     return (
       <div className="mx-auto max-w-6xl p-6">
-        <Link to="/" className="inline-flex items-center gap-2 text-[#0D3B66] hover:underline">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-[#0D3B66] hover:underline"
+        >
           <ArrowLeft className="w-4 h-4" /> Volver al mapa
         </Link>
         <h1 className="mt-6 text-2xl font-semibold">Spot no encontrado</h1>
@@ -133,7 +128,10 @@ export default function ForecastPage() {
       {/* HERO */}
       <div className="border-b bg-gradient-to-b from-white to-[#f4f8fb]">
         <div className="mx-auto max-w-6xl px-5 py-4 flex items-center justify-between">
-          <Link to="/" className="inline-flex items-center gap-2 text-[#0D3B66] hover:underline">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-[#0D3B66] hover:underline"
+          >
             <ArrowLeft className="w-4 h-4" /> Back to Map
           </Link>
           <div className="text-[#0D3B66] font-semibold">Nautic</div>
@@ -145,17 +143,30 @@ export default function ForecastPage() {
         </div>
 
         <div className="mx-auto max-w-6xl px-5 pb-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">{spot.name}</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+            {spot.name}
+          </h1>
           <p className="text-sm text-slate-500 mt-1">
             {Math.abs(spot.lat).toFixed(2)}°S, {Math.abs(spot.lon).toFixed(2)}°W
           </p>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <SummaryCard title="Puntuación Kayak" value={`${kayakScore?.score ?? 0}/100`} color="emerald" />
-            <SummaryCard title="Puntuación Surf"  value={`${surfScore?.score ?? 0}/100`}  color="emerald" />
-            <SummaryCard title="Puntuación Kite"  value={`${kiteScore?.score ?? 0}/100`}  color="emerald" />
+            <SummaryCard
+              title="Puntuación Kayak"
+              value={`${kayakScore?.score ?? 0}/100`}
+              color="emerald"
+            />
+            <SummaryCard
+              title="Puntuación Surf"
+              value={`${surfScore?.score ?? 0}/100`}
+              color="emerald"
+            />
+            <SummaryCard
+              title="Puntuación Kite"
+              value={`${kiteScore?.score ?? 0}/100`}
+              color="emerald"
+            />
           </div>
-
         </div>
       </div>
 
@@ -163,21 +174,37 @@ export default function ForecastPage() {
       <div className="mx-auto max-w-6xl px-5 py-8 space-y-10">
         <SectionTitle>Condiciones Generales</SectionTitle>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <TinyStat icon={<Thermometer className="w-4 h-4" />} label="Temperatura" value={`${data.maxTemperature}°C`} />
-          <TinyStat icon={<Cloud className="w-4 h-4" />} label="Probabilidad de lluvia" value={`${data.precipitation_probability}%`} />
-          <TinyStat icon={<Wind className="w-4 h-4" />} label="Humedad" value={`${data.cloudCover}%`} />
-          <TinyStat icon={<Waves className="w-4 h-4" />} label="Índice de UV" value={`${data.uvIndex}`} />
+          <TinyStat
+            icon={<Thermometer className="w-4 h-4" />}
+            label="Temperatura"
+            value={`${data.maxTemperature ?? 0}°C`}
+          />
+          <TinyStat
+            icon={<Cloud className="w-4 h-4" />}
+            label="Probabilidad de lluvia"
+            value={`${data.precipitation_probability ?? 0}%`}
+          />
+          <TinyStat
+            icon={<Wind className="w-4 h-4" />}
+            label="Humedad"
+            value={`${data.cloudCover ?? 0}%`}
+          />
+          <TinyStat
+            icon={<Waves className="w-4 h-4" />}
+            label="Índice de UV"
+            value={`${data.uvIndex ?? 0}`}
+          />
         </div>
 
         <SectionTitle>Condiciones Detalladas</SectionTitle>
         <div className="grid md:grid-cols-3 gap-5">
           <BigCard icon={<Waves className="w-5 h-5" />} title="Oleaje">
-            <KV k="Altura"  v={`${Number(data.waveHeight ?? 0).toFixed(1)} m`} />
+            <KV k="Altura" v={`${Number(data.waveHeight ?? 0).toFixed(1)} m`} />
             <KV k="Periodo" v={`${Number(data.wavePeriod ?? 0).toFixed(0)} s`} />
           </BigCard>
           <BigCard icon={<Wind className="w-5 h-5" />} title="Viento">
-            <KV k="Velocidad" v={`${data.wind_speed} km/h`} />
-            <KV k="Ráfagas"  v={`${data.wind_gustValue} km/h`} />
+            <KV k="Velocidad" v={`${data.wind_speed ?? 0} km/h`} />
+            <KV k="Ráfagas" v={`${data.wind_gustValue ?? 0} km/h`} />
           </BigCard>
           <BigCard icon={<Thermometer className="w-5 h-5" />} title="Temperatura">
             <KV k="Max" v={`${data.maxTemperature ?? 0}°C`} />
@@ -200,9 +227,21 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 function Chip({ children }: { children: React.ReactNode }) {
-  return <span className="rounded-full border px-3 py-1 text-xs text-slate-600 bg-white shadow-sm">{children}</span>;
+  return (
+    <span className="rounded-full border px-3 py-1 text-xs text-slate-600 bg-white shadow-sm">
+      {children}
+    </span>
+  );
 }
-function SummaryCard({ title, value, color }: { title: string; value: string; color: "blue"|"teal"|"emerald"|"slate"; }) {
+function SummaryCard({
+  title,
+  value,
+  color,
+}: {
+  title: string;
+  value: string;
+  color: "blue" | "teal" | "emerald" | "slate";
+}) {
   const colorMap: Record<string, string> = {
     blue: "bg-blue-100 text-blue-700",
     teal: "bg-teal-100 text-teal-700",
@@ -211,13 +250,31 @@ function SummaryCard({ title, value, color }: { title: string; value: string; co
   };
   return (
     <div className="rounded-2xl border bg-white shadow-sm p-4 relative overflow-hidden">
-      <div className={`absolute left-0 top-0 h-full w-1 ${color==="blue"?"bg-blue-500":color==="teal"?"bg-teal-500":color==="emerald"?"bg-emerald-500":"bg-slate-400"}`} />
+      <div
+        className={`absolute left-0 top-0 h-full w-1 ${
+          color === "blue"
+            ? "bg-blue-500"
+            : color === "teal"
+            ? "bg-teal-500"
+            : color === "emerald"
+            ? "bg-emerald-500"
+            : "bg-slate-400"
+        }`}
+      />
       <div className="text-xs text-slate-500">{title}</div>
       <div className={`text-2xl font-bold mt-1 ${colorMap[color]}`}>{value}</div>
     </div>
   );
 }
-function BigCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function BigCard({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-2xl border bg-white shadow-sm p-5">
       <div className="flex items-center gap-3 mb-3 text-[#0D3B66]">
@@ -236,7 +293,15 @@ function KV({ k, v }: { k: string; v: string }) {
     </div>
   );
 }
-function TinyStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function TinyStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="rounded-2xl border bg-white shadow-sm p-4">
       <div className="flex items-center gap-2 text-slate-600">
@@ -246,14 +311,4 @@ function TinyStat({ icon, label, value }: { icon: React.ReactNode; label: string
       <div className="text-slate-900 font-semibold mt-2">{value}</div>
     </div>
   );
-}
-
-/* ---------- utils ---------- */
-function qualifyNow(d: WeatherDay | null): string {
-  if (!d) return "—";
-  const h = d.waveHeight ?? 0;
-  const w = d.wind_speed ?? 0;
-  if (h >= 1.2 && w < 8) return "Bueno";
-  if (h >= 0.7) return "Aceptable";
-  return "Calmo";
 }

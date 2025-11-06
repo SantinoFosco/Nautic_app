@@ -10,7 +10,8 @@ export default function BusinessRegister() {
     name: "",
     type: "",
     city: "",
-    coordinates: "",
+    lat: "",
+    lon: "",
     phone: "",
     email: "",
     socials: "",
@@ -40,6 +41,15 @@ export default function BusinessRegister() {
       return;
     }
 
+    // 🔹 Validar latitud y longitud
+    const lat = Number(formData.lat);
+    const lon = Number(formData.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      alert("Ingresá una latitud y longitud válidas.");
+      setLoading(false);
+      return;
+    }
+
     try {
       // Enviamos los datos al backend FastAPI
       const res = await createBusiness({
@@ -50,7 +60,8 @@ export default function BusinessRegister() {
         telefono: formData.phone,
         email: formData.email,
         direccion: formData.city,
-        coordenadas: formData.coordinates,
+        latitud: formData.lat,
+        longitud: formData.lon,
         horarios: formData.schedule,
         descripcion: formData.description,
       });
@@ -85,7 +96,9 @@ export default function BusinessRegister() {
         <div className="w-full max-w-md px-8">
           {/* Encabezado */}
           <div className="text-center mb-6">
-            <h2 className="text-3xl font-bold text-[#0b2849]">Registrá tu negocio</h2>
+            <h2 className="text-3xl font-bold text-[#0b2849]">
+              Registrá tu negocio
+            </h2>
             <p className="text-gray-600 text-sm">
               Completá los datos de tu escuela o emprendimiento
             </p>
@@ -123,13 +136,27 @@ export default function BusinessRegister() {
               onChange={handleChange}
               className="input validator py-2"
             />
-            <input
-              name="coordinates"
-              placeholder="Coordenadas (lat, long)"
-              value={formData.coordinates}
-              onChange={handleChange}
-              className="input validator py-2"
-            />
+
+            {/* 🧭 Campos separados para latitud y longitud */}
+            <div className="flex gap-2">
+              <input
+                name="lat"
+                placeholder="Latitud (ej: -38.005)"
+                value={formData.lat}
+                onChange={handleChange}
+                className="input validator py-2 w-1/2"
+                required
+              />
+              <input
+                name="lon"
+                placeholder="Longitud (ej: -57.542)"
+                value={formData.lon}
+                onChange={handleChange}
+                className="input validator py-2 w-1/2"
+                required
+              />
+            </div>
+
             <input
               name="phone"
               placeholder="Teléfono / WhatsApp"

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup } from "react-leaflet";
-import { Thermometer, Wind, CloudRain, Waves } from "lucide-react";
+import { Thermometer, Wind, CloudRain, Waves, Store } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { useNavigate } from "react-router-dom";
 
@@ -10,7 +10,9 @@ type Spot = {
   name: string;
   lat: number;
   lon: number;
-  sports: Sport[];
+  type: "spot" | "business";
+  sports?: Sport[];
+  best_sport?: string;
 };
 
 type WeatherData = {
@@ -29,20 +31,30 @@ export default function MapView() {
   const [loadingWeather, setLoadingWeather] = useState(false);
   const navigate = useNavigate();
 
-  // === 1️⃣ Traer todos los spots (solo una vez) ===
+  // === 1️⃣ Traer spots + negocios ===
   useEffect(() => {
-    const fetchSpots = async () => {
-      const res = await fetch("http://127.0.0.1:8000/spot/list");
-      const backendSpots = await res.json();
-      setSpots(backendSpots);
+    const fetchData = async () => {
+      try {
+        const resSpots = await fetch("http://127.0.0.1:8000/spot/list?day=0");
+        const spotsData = await resSpots.json();
+
+        const resBusiness = await fetch("http://127.0.0.1:8000/spot/business_list");
+        const businessData = await resBusiness.json();
+
+        setSpots([...spotsData, ...businessData]);
+      } catch (err) {
+        console.error("Error al cargar spots o negocios:", err);
+      }
     };
-    fetchSpots();
+    fetchData();
   }, []);
 
   // === 2️⃣ Filtro por deporte ===
   const visibleSpots = useMemo(() => {
     if (selectedSports.length === 0) return spots;
-    return spots.filter((s) => s.sports.some((sport) => selectedSports.includes(sport)));
+    return spots.filter((s) =>
+      s.sports?.some((sport) => selectedSports.includes(sport))
+    );
   }, [selectedSports, spots]);
 
   const selectedSpot = visibleSpots.find((s) => s.name === selected);
@@ -54,11 +66,20 @@ export default function MapView() {
   };
   const resetSports = () => setSelectedSports([]);
 
-  // === 3️⃣ Nuevo: pedir clima solo al click ===
+  // === 3️⃣ Pedir clima solo para spots ===
   const handleSpotClick = async (spot: Spot) => {
     setSelected(spot.name);
 
-    // si ya tenemos los datos, no vuelvas a pedirlos
+    if (spot.type === "business") {
+      // Para negocios, no pedimos clima
+      setData((prev) => ({
+        ...prev,
+        [spot.name]: {},
+      }));
+      return;
+    }
+
+    // si ya tenemos los datos, no volver a pedirlos
     if (data[spot.name]) return;
 
     setLoadingWeather(true);
@@ -136,15 +157,15 @@ export default function MapView() {
           const wind = d?.wind_speed_10m ?? 0;
           const waves = d?.wave_height ?? 0;
           const rain = d?.precipitation ?? 0;
-          const sport = pickSportForSpot(selectedSports, spot.sports);
+          const sport = pickSportForSpot(selectedSports, spot.sports || []);
           const apt = calcAptitude(sport, wind, waves, rain);
-          const color = aptColor(apt);
+          const color = spot.type === "business" ? "#2563eb" : aptColor(apt); // 🟦 negocios en azul
 
           return (
             <CircleMarker
               key={spot.name}
               center={[spot.lat, spot.lon]}
-              radius={6}
+              radius={spot.type === "business" ? 8 : 6}
               pathOptions={{ color, fillColor: color, fillOpacity: 0.9, weight: 2 }}
               eventHandlers={{ click: () => handleSpotClick(spot) }}
             >
@@ -167,9 +188,15 @@ export default function MapView() {
             eventHandlers={{ remove: () => setSelected(null) }}
           >
             <div className="w-[260px] space-y-2">
-              <h3 className="font-semibold text-[#0D3B66]">{selectedSpot.name}</h3>
+              <h3 className="font-semibold text-[#0D3B66]">
+                {selectedSpot.name}
+              </h3>
 
-              {loadingWeather && !data[selectedSpot.name] ? (
+              {selectedSpot.type === "business" ? (
+                <p className="text-sm text-gray-600">
+                  🏪 Negocio registrado en la zona.
+                </p>
+              ) : loadingWeather && !data[selectedSpot.name] ? (
                 <div className="flex justify-center py-4">
                   <span className="loading loading-spinner loading-md text-[#0D3B66]"></span>
                 </div>
@@ -178,27 +205,47 @@ export default function MapView() {
                   <div className="text-xs text-slate-500">
                     Día {day} • Deporte:{" "}
                     <span className="font-semibold">
-                      {pickSportForSpot(selectedSports, selectedSpot.sports).toUpperCase()}
+                      {pickSportForSpot(selectedSports, selectedSpot.sports || []).toUpperCase()}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
-                    <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.name].temperature_2m}°C`} />
-                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.name].wind_speed_10m} m/s`} />
-                    <Info icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />} label="Lluvia prom." value={`${data[selectedSpot.name].precipitation} mm`} />
-                    <Info icon={<Waves className="w-4 h-4 text-[#0D3B66]" />} label="Olas prom." value={`${data[selectedSpot.name].wave_height} m`} />
+                    <Info
+                      icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Temp prom."
+                      value={`${data[selectedSpot.name].temperature_2m ?? 0}°C`}
+                    />
+                    <Info
+                      icon={<Wind className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Viento prom."
+                      value={`${data[selectedSpot.name].wind_speed_10m ?? 0} m/s`}
+                    />
+                    <Info
+                      icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Lluvia prom."
+                      value={`${data[selectedSpot.name].precipitation ?? 0} mm`}
+                    />
+                    <Info
+                      icon={<Waves className="w-4 h-4 text-[#0D3B66]" />}
+                      label="Olas prom."
+                      value={`${data[selectedSpot.name].wave_height ?? 0} m`}
+                    />
                   </div>
                 </>
               ) : (
                 <p className="text-gray-400 text-sm">Sin datos disponibles</p>
               )}
 
-              <button
-                className="w-full bg-[#0D3B66] text-white py-2 rounded-md text-sm font-medium hover:bg-[#0b3355] transition"
-                onClick={() => navigate(`/forecast/${encodeURIComponent(selectedSpot.name)}`)}
-              >
-                Ver Pronóstico Completo
-              </button>
+              {selectedSpot.type === "spot" && (
+                <button
+                  className="w-full bg-[#0D3B66] text-white py-2 rounded-md text-sm font-medium hover:bg-[#0b3355] transition"
+                  onClick={() =>
+                    navigate(`/forecast/${encodeURIComponent(selectedSpot.name)}`)
+                  }
+                >
+                  Ver Pronóstico Completo
+                </button>
+              )}
             </div>
           </Popup>
         )}
@@ -240,5 +287,5 @@ function pickSportForSpot(selectedSports: string[], spotSports: Sport[]): Sport 
   if (selectedSports.length === 1 && spotSports.includes(selectedSports[0] as Sport)) {
     return selectedSports[0] as Sport;
   }
-  return spotSports[0];
+  return spotSports[0] ?? "surf";
 }

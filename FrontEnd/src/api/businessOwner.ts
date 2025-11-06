@@ -1,7 +1,6 @@
-import { apiFormPOST } from "./client";
+import { apiFormPOST, apiGET } from "./client";
 
-
-// 🔹 Registro de dueño (ya lo tenías)
+// 🟩 Registrar dueño (usa /user/register)
 export async function registerOwner(payload: {
   nombre: string;
   apellido: string;
@@ -10,30 +9,20 @@ export async function registerOwner(payload: {
   password: string;
 }) {
   return apiFormPOST<{ message: string; id_dueno: number }>(
-    "/business_owner/register",
+    "/user/register",
     payload
   );
 }
 
-// 🔹 Login de dueño (nuevo)
+// 🟩 Login del dueño (usa /user/login)
 export async function loginOwner(payload: { email: string; password: string }) {
   return apiFormPOST<{ message: string; id_dueno: number; email: string }>(
-    "/business_owner/login",
+    "/user/login",
     payload
   );
 }
 
-
-// 🔹 Listar negocios del dueño
-export async function listMyBusinesses(id_dueno: string) {
-  return apiGET<
-    { id_negocio: number; nombre_fantasia: string; rubro: string; activo: boolean }[]
-  >(`/business_owner/businesses?id_dueno=${id_dueno}`);
-}
-
-import { apiFormPOST } from "./client";
-
-// 🔹 Crear negocio
+// 🟩 Crear negocio (usa /business_owner/new_business)
 export async function createBusiness(payload: {
   id_dueno: string;
   nombre_fantasia: string;
@@ -42,12 +31,32 @@ export async function createBusiness(payload: {
   telefono?: string;
   email?: string;
   direccion?: string;
-  coordenadas?: string;
+  latitud?: string;
+  longitud?: string;
   horarios?: string;
   descripcion?: string;
 }) {
   return apiFormPOST<{ message: string; id_negocio: number }>(
-    "/business_owner/business",
+    "/business_owner/new_business",
     payload
   );
+}
+
+// 🟩 Listar negocios del dueño (usa /business_owner/my_business)
+export async function listMyBusinesses(id_dueno: string) {
+  return apiGET<
+    {
+      nombre_fantasia: string;
+      rubro: string;
+      sitio_web: string;
+      telefono: string;
+      email: string;
+      direccion: string;
+      lat: number | null;
+      lon: number | null;
+      horarios: string;
+      descripcion: string;
+      activo: boolean;
+    }[]
+  >(`/business_owner/my_business?id_dueno=${id_dueno}`);
 }

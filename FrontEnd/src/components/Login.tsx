@@ -34,12 +34,17 @@ export default function Login() {
       console.log("✅ Login exitoso:", res);
       alert(res.message);
 
-      // Guardamos el ID del usuario logueado
+      // 🔹 Guardamos la info del usuario logueado
       localStorage.setItem("ownerId", String(res.id_dueno));
       localStorage.setItem("ownerEmail", res.email);
+      localStorage.setItem("userType", res.tipo_usuario || "user");
 
-      // Redirige al panel o página principal
-      navigate("/business");
+      // 🔹 Redirigimos según el tipo de usuario
+      if (res.tipo_usuario === "admin") {
+        navigate("/admin-dashboard"); // 👈 ruta para el admin
+      } else {
+        navigate("/business"); // 👈 ruta para usuario normal
+      }
     } catch (err: any) {
       console.error("Error en login:", err);
       setError("Credenciales incorrectas. Verificá tus datos.");
@@ -104,7 +109,10 @@ export default function Login() {
 
           <p className="text-sm text-gray-600 text-center mt-4">
             ¿Todavía no tenés cuenta?{" "}
-            <Link to="/register" className="text-[#0b2849] font-medium hover:underline">
+            <Link
+              to="/register"
+              className="text-[#0b2849] font-medium hover:underline"
+            >
               Creá una ahora
             </Link>
           </p>
