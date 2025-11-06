@@ -10,6 +10,7 @@ import BusinessEdit from "./components/BusinessEdit";
 import AdminDashboard from "./pages/AdminDashboard";
 import BusinessPanel from "./components/BusinessPanel";
 import BusinessEmptyState from "./components/BusinessEmptyState";
+import FAQ from "./components/FAQ";
 
 
 function Layout() {
@@ -51,6 +52,7 @@ function Layout() {
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/business-empty" element={<BusinessEmptyState />} />
           <Route path="/business" element={<BusinessPanel />} />
+          <Route path="/faq" element={<FAQ />} />
         </Routes>
       </main>
     </div>

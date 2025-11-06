@@ -11,6 +11,7 @@ import {
   Info as InfoIcon,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
+import { useNavigate } from "react-router-dom";
 
 type Sport = "surf" | "kite";
 
@@ -47,6 +48,7 @@ export default function MapView() {
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [day, setDay] = useState(0);
   const [loadingWeather, setLoadingWeather] = useState(false);
+  const navigate = useNavigate();
 
   // === 1️⃣ Traer spots + negocios ===
   useEffect(() => {
@@ -210,32 +212,16 @@ export default function MapView() {
               {selectedSpot.type === "business" ? (
                 <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
                   {selectedSpot.rubro && (
-                    <Info
-                      icon={<InfoIcon className="w-4 h-4 text-[#0D3B66]" />}
-                      label="Rubro"
-                      value={selectedSpot.rubro}
-                    />
+                    <Info icon={<InfoIcon className="w-4 h-4 text-[#0D3B66]" />} label="Rubro" value={selectedSpot.rubro} />
                   )}
                   {selectedSpot.telefono && (
-                    <Info
-                      icon={<Phone className="w-4 h-4 text-[#0D3B66]" />}
-                      label="Teléfono"
-                      value={selectedSpot.telefono}
-                    />
+                    <Info icon={<Phone className="w-4 h-4 text-[#0D3B66]" />} label="Teléfono" value={selectedSpot.telefono} />
                   )}
                   {selectedSpot.horarios && (
-                    <Info
-                      icon={<Clock className="w-4 h-4 text-[#0D3B66]" />}
-                      label="Horarios"
-                      value={selectedSpot.horarios}
-                    />
+                    <Info icon={<Clock className="w-4 h-4 text-[#0D3B66]" />} label="Horarios" value={selectedSpot.horarios} />
                   )}
                   {selectedSpot.direccion && (
-                    <Info
-                      icon={<MapPin className="w-4 h-4 text-[#0D3B66]" />}
-                      label="Dirección"
-                      value={selectedSpot.direccion}
-                    />
+                    <Info icon={<MapPin className="w-4 h-4 text-[#0D3B66]" />} label="Dirección" value={selectedSpot.direccion} />
                   )}
                 </div>
               ) : loadingWeather && !data[selectedSpot.name] ? (
@@ -250,7 +236,6 @@ export default function MapView() {
                       {pickSportForSpot(selectedSports, selectedSpot.sports || []).toUpperCase()}
                     </span>
                   </div>
-
                   <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
                     <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.name].temperature_2m ?? 0}°C`} />
                     <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.name].wind_speed_10m ?? 0} m/s`} />
@@ -271,6 +256,46 @@ export default function MapView() {
           </Popup>
         )}
       </MapContainer>
+
+      {/* === FAB de ayuda === */}
+      <div className="fixed z-[1200] right-5 bottom-5">
+        <div className="fab fab-vertical gap-2">
+          {/* Botón principal con ? */}
+          <div
+            tabIndex={0}
+            role="button"
+            className="btn btn-lg btn-circle text-white shadow-lg"
+            style={{ backgroundColor: "#59b7ff", border: "none" }}
+          >
+            ?
+          </div>
+
+          {/* Opciones que aparecen al abrir */}
+          <div>
+            Ver Preguntas Frecuentes
+            <button
+              className="btn btn-sm btn-circle bg-[#0b2849] text-white hover:bg-[#143b6b]"
+              onClick={() => navigate("/faq")}
+            >
+              📘
+            </button>
+          </div>
+
+          <div>
+            Cómo usar el mapa
+            <button
+              className="btn btn-sm btn-circle bg-[#0b2849] text-white hover:bg-[#143b6b]"
+              onClick={() =>
+                alert(
+                  "Usá los botones de la esquina superior derecha para cambiar el deporte (surf o kite) y el selector de día para ver el pronóstico. Hacé clic en un punto del mapa para ver más información."
+                )
+              }
+            >
+              💡
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
