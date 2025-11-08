@@ -105,6 +105,31 @@ async def get_business_details(lat: float = Query(...), lon: float = Query(...),
         "descripcion": business.descripcion
     }
 
+# ------------------------------------------------------------
+# 🔹 Información de todos los negocios
+# ------------------------------------------------------------
+@router.get("/businesses/info")
+def get_businesses_info(db: Session = Depends(get_db)):
+    business_db = db.query(Negocio).all()
+
+    business_list = []
+
+    for b in business_db:
+        business_list.append({
+            "id": b.id_negocio,
+            "nombre_fantasia": b.nombre_fantasia,
+            "rubro": b.rubro,
+            "sitio_web": b.sitio_web,
+            "estado": b.estado.value if hasattr(b.estado, "value") else str(b.estado),
+            "direccion": b.direccion,
+            "telefono": b.telefono,
+            "email": b.email,
+            "descripcion": b.descripcion,
+            "fecha_creacion": b.fecha_creacion.isoformat() if b.fecha_creacion else None,
+        })
+
+    return business_list
+
 @router.get("/weather_average")
 async def get_weather_average(
     lat: float = Query(...),
@@ -290,3 +315,4 @@ async def get_general_weather(
         result[tv.nombre] = vm.valor  # 'valor' es TEXT en tu modelo
 
     return result
+

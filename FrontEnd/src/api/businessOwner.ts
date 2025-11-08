@@ -60,3 +60,20 @@ export async function listMyBusinesses(id_dueno: string) {
     }[]
   >(`/business_owner/my_business?id_dueno=${id_dueno}`);
 }
+
+export type BusinessInfo = {
+  id: number;
+  nombre_fantasia: string;
+  rubro?: string | null;
+  estado: string;
+  direccion?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  sitio_web?: string | null;
+  descripcion?: string | null;
+  fecha_creacion?: string | null;
+};
+
+export async function getBusinessesInfo() {
+  return apiGET<BusinessInfo[]>("/spot/businesses/info");
+}
