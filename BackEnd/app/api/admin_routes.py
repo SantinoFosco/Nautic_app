@@ -182,10 +182,40 @@ def estadisticas(db: Session = Depends(get_db)):
     }
 
 # ------------------------------------------------------------
-# 🔹 3 Spots aleatorios activos
+# 🔹 Spots activos (lista completa)
 # ------------------------------------------------------------
-@router.get("/spots/aleatorios")
-def spots_aleatorios(db: Session = Depends(get_db)):
+@router.get("/spots/activos")
+def spots_activos(db: Session = Depends(get_db)):
     spots_activos = db.query(Spot).filter(Spot.activo == True).all()
-    seleccion = random.sample(spots_activos, min(3, len(spots_activos)))
-    return seleccion
+
+    return [
+        {
+            "id": s.id,
+            "nombre": s.nombre,
+            "tipo": s.tipo,
+            "lat": float(s.lat),
+            "lon": float(s.lon),
+        }
+        for s in spots_activos
+    ]
+
+# ------------------------------------------------------------
+# 🔹 Información de todos los negocios
+# ------------------------------------------------------------
+@router.get("/negocios/info")
+def info_negocios(db: Session = Depends(get_db)):
+    business_db = db.query(Negocio).all()
+
+    business_list = []
+
+    for b in business_db:
+        business_list.append({
+            "id": b.id_negocio,
+            "name": b.nombre_fantasia,
+            "estado": b.estado,
+            "direccion": b.direccion,
+            "telefono": b.telefono,
+            "email": b.email,
+        })
+
+    return business_list

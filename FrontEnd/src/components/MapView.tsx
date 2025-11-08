@@ -8,12 +8,23 @@ import {
   Clock,
   Phone,
   MapPin,
-  Info as InfoIcon,
+  Globe,
+  Home,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { useNavigate } from "react-router-dom";
 
-type Sport = "surf" | "kite";
+// === TIPOS ===
+type Sport = "surf" | "kite" | "kayak";
+
+function normalizeSportName(name?: string | null): Sport | null {
+  if (!name) return null;
+  const n = name.trim().toLowerCase();
+  if (n.includes("kite")) return "kite";
+  if (n.includes("kayak")) return "kayak";
+  if (n.includes("surf")) return "surf";
+  return null;
+}
 
 type Spot = {
   name: string;
@@ -23,7 +34,7 @@ type Spot = {
   sports?: Sport[];
   best_sport?: string;
 
-  // Campos extra de negocio
+  // Datos de negocio
   nombre_fantasia?: string;
   rubro?: string;
   direccion?: string;
@@ -41,16 +52,17 @@ type WeatherData = {
   wave_height?: number;
 };
 
+// === COMPONENTE PRINCIPAL ===
 export default function MapView() {
   const [spots, setSpots] = useState<Spot[]>([]);
-  const [data, setData] = useState<Record<string, WeatherData>>({});
+  const [data, setData] = useState<Record<string, any>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [day, setDay] = useState(0);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const navigate = useNavigate();
 
-  // === 1️⃣ Traer spots + negocios ===
+  // === 1️⃣ Cargar spots y negocios ===
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -68,16 +80,32 @@ export default function MapView() {
     fetchData();
   }, []);
 
-  // === 2️⃣ Filtro por deporte ===
+  // === 2️⃣ Filtro por deporte (para spots y negocios) ===
   const visibleSpots = useMemo(() => {
     if (selectedSports.length === 0) return spots;
-    return spots.filter((s) =>
-      s.sports?.some((sport) => selectedSports.includes(sport))
-    );
+
+    return spots.filter((s) => {
+      if (s.type === "spot") {
+        const best = normalizeSportName(s.best_sport);
+        return best ? selectedSports.includes(best) : false;
+      }
+
+      // type === "business"
+      const sportsNorm = (s.sports ?? [])
+        .map((n) => normalizeSportName(n))
+        .filter(Boolean) as Sport[];
+      const matchesSports = sportsNorm.some((sp) => selectedSports.includes(sp));
+
+      const rubroNorm = normalizeSportName(s.rubro ?? null);
+      const matchesRubro = rubroNorm ? selectedSports.includes(rubroNorm) : false;
+
+      return matchesSports || matchesRubro;
+    });
   }, [selectedSports, spots]);
 
   const selectedSpot = visibleSpots.find((s) => s.name === selected);
 
+  // === 3️⃣ Funciones auxiliares ===
   const toggleSport = (sport: string) => {
     setSelectedSports((prev) =>
       prev.includes(sport) ? prev.filter((s) => s !== sport) : [...prev, sport]
@@ -85,18 +113,24 @@ export default function MapView() {
   };
   const resetSports = () => setSelectedSports([]);
 
-  // === 3️⃣ Pedir clima solo para spots ===
+  // === 4️⃣ Click en marcador ===
   const handleSpotClick = async (spot: Spot) => {
     setSelected(spot.name);
 
     if (spot.type === "business") {
-      setData((prev) => ({
-        ...prev,
-        [spot.name]: {},
-      }));
+      try {
+        const url = `http://127.0.0.1:8000/spot/business_details?lat=${spot.lat}&lon=${spot.lon}`;
+        const res = await fetch(url);
+        const details = await res.json();
+        setData((prev) => ({ ...prev, [spot.name]: details || {} }));
+      } catch (err) {
+        console.error("Error al traer detalles del negocio:", err);
+        setData((prev) => ({ ...prev, [spot.name]: {} }));
+      }
       return;
     }
 
+    // Si es spot deportivo: clima
     if (data[spot.name]) return;
 
     setLoadingWeather(true);
@@ -113,14 +147,15 @@ export default function MapView() {
     }
   };
 
+  // === RENDER ===
   return (
     <div className="relative flex-1 min-h-0 w-full">
       {/* === FILTROS === */}
       <div className="fixed z-[1100] right-4 top-[calc(64px+16px)] pointer-events-none">
         <div className="flex flex-col gap-3 pointer-events-auto items-end">
-          {/* Filtro de deporte */}
+          {/* Filtro deporte */}
           <div className="flex gap-2">
-            {["surf", "kite"].map((sport) => (
+            {["surf", "kite", "kayak"].map((sport) => (
               <button
                 key={sport}
                 onClick={() => toggleSport(sport)}
@@ -135,13 +170,13 @@ export default function MapView() {
             ))}
             <button
               onClick={resetSports}
-              className="w-[40px] px-2 py-2 rounded-md text-sm font-bold shadow transition-all border bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
+              className="w-[40px] px-2 py-2 rounded-md text-sm font-bold shadow border bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
             >
               ×
             </button>
           </div>
 
-          {/* Filtro de día */}
+          {/* Filtro día */}
           <select
             className="select select-bordered select-sm bg-white text-[#0D3B66] w-[180px] border-slate-300"
             value={day}
@@ -150,16 +185,14 @@ export default function MapView() {
             {[...Array(5)].map((_, i) => {
               const date = new Date();
               date.setDate(date.getDate() + i);
-
               const formatted = date.toLocaleDateString("es-AR", {
                 weekday: "short",
                 day: "2-digit",
                 month: "2-digit",
               });
-
               return (
                 <option key={i} value={i}>
-                  {i === 0 ? `${formatted}` : formatted}
+                  {formatted}
                 </option>
               );
             })}
@@ -212,29 +245,51 @@ export default function MapView() {
             autoPan
             keepInView
             closeButton
-            className="spot-popup"
             eventHandlers={{ remove: () => setSelected(null) }}
           >
             <div className="w-[260px] space-y-2">
-              <h3 className="font-bold text-[#0D3B66] text-lg">
+              <h3 className="font-bold text-[#0D3B66] text-lg text-center">
                 {selectedSpot.nombre_fantasia || selectedSpot.name}
               </h3>
 
               {selectedSpot.type === "business" ? (
-                <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
-                  {selectedSpot.rubro && (
-                    <Info icon={<InfoIcon className="w-4 h-4 text-[#0D3B66]" />} label="Rubro" value={selectedSpot.rubro} />
-                  )}
-                  {selectedSpot.telefono && (
-                    <Info icon={<Phone className="w-4 h-4 text-[#0D3B66]" />} label="Teléfono" value={selectedSpot.telefono} />
-                  )}
-                  {selectedSpot.horarios && (
-                    <Info icon={<Clock className="w-4 h-4 text-[#0D3B66]" />} label="Horarios" value={selectedSpot.horarios} />
-                  )}
-                  {selectedSpot.direccion && (
-                    <Info icon={<MapPin className="w-4 h-4 text-[#0D3B66]" />} label="Dirección" value={selectedSpot.direccion} />
-                  )}
-                </div>
+                (() => {
+                  const biz = { ...selectedSpot, ...(data[selectedSpot.name] || {}) };
+                  return (
+                    <>
+                      <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-3">
+                        {biz.rubro && (
+                          <Info icon={<Home className="w-4 h-4 text-[#0D3B66]" />} label="Rubro" value={biz.rubro} />
+                        )}
+                        {biz.telefono && (
+                          <Info icon={<Phone className="w-4 h-4 text-[#0D3B66]" />} label="Teléfono" value={biz.telefono} />
+                        )}
+                        {biz.horarios && (
+                          <Info icon={<Clock className="w-4 h-4 text-[#0D3B66]" />} label="Horarios" value={biz.horarios} />
+                        )}
+                        {biz.direccion && (
+                          <Info icon={<MapPin className="w-4 h-4 text-[#0D3B66]" />} label="Dirección" value={biz.direccion} />
+                        )}
+                      </div>
+
+                      {biz.sitio_web && (
+                        <p className="text-center text-sm text-[#0D3B66] mt-3 underline">
+                          <a href={biz.sitio_web} target="_blank" rel="noopener noreferrer">
+                            <span className="inline-flex items-center gap-1">
+                              <Globe className="w-4 h-4" /> Sitio web
+                            </span>
+                          </a>
+                        </p>
+                      )}
+
+                      {biz.descripcion && (
+                        <p className="mt-3 text-gray-600 text-xs italic text-center">
+                          “{biz.descripcion}”
+                        </p>
+                      )}
+                    </>
+                  );
+                })()
               ) : loadingWeather && !data[selectedSpot.name] ? (
                 <div className="flex justify-center py-4">
                   <span className="loading loading-spinner loading-md text-[#0D3B66]"></span>
@@ -253,25 +308,25 @@ export default function MapView() {
                     <Info icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />} label="Lluvia prom." value={`${data[selectedSpot.name].precipitation ?? 0} mm`} />
                     <Info icon={<Waves className="w-4 h-4 text-[#0D3B66]" />} label="Olas prom." value={`${data[selectedSpot.name].wave_height ?? 0} m`} />
                   </div>
+
+                  <button
+                    className="w-full bg-[#0D3B66] text-white py-2 rounded-md text-sm font-medium hover:bg-[#0b3355] transition mt-2"
+                    onClick={() => navigate(`/forecast/${encodeURIComponent(selectedSpot.name)}`)}
+                  >
+                    Ver Pronóstico Completo
+                  </button>
                 </>
               ) : (
                 <p className="text-gray-400 text-sm">Sin datos disponibles</p>
-              )}
-
-              {selectedSpot.descripcion && (
-                <p className="mt-3 text-gray-600 text-xs italic text-center">
-                  “{selectedSpot.descripcion}”
-                </p>
               )}
             </div>
           </Popup>
         )}
       </MapContainer>
 
-      {/* === FAB de ayuda === */}
+      {/* === FAB Ayuda === */}
       <div className="fixed z-[1200] right-5 bottom-5">
         <div className="fab fab-vertical gap-2">
-          {/* Botón principal con ? */}
           <div
             tabIndex={0}
             role="button"
@@ -281,7 +336,6 @@ export default function MapView() {
             ?
           </div>
 
-          {/* Opciones que aparecen al abrir */}
           <div>
             Ver Preguntas Frecuentes
             <button
@@ -298,7 +352,7 @@ export default function MapView() {
               className="btn btn-sm btn-circle bg-[#0b2849] text-white hover:bg-[#143b6b]"
               onClick={() =>
                 alert(
-                  "Usá los botones de la esquina superior derecha para cambiar el deporte (surf o kite) y el selector de día para ver el pronóstico. Hacé clic en un punto del mapa para ver más información."
+                  "Usá los botones de la esquina superior derecha para cambiar el deporte (surf, kite o kayak) y el selector de día para ver el pronóstico. Hacé clic en un punto del mapa para ver más información."
                 )
               }
             >
@@ -311,7 +365,7 @@ export default function MapView() {
   );
 }
 
-/* === COMPONENTE INFO === */
+// === COMPONENTE INFO ===
 function Info({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex flex-col items-center justify-center text-center">
@@ -322,17 +376,23 @@ function Info({ icon, label, value }: { icon: React.ReactNode; label: string; va
   );
 }
 
-/* === HELPERS === */
+// === HELPERS ===
 type AptLabel = "excelente" | "bueno" | "malo";
 
-function calcAptitude(sport: "surf" | "kite", wind: number, waves: number, rain: number): AptLabel {
+function calcAptitude(sport: Sport, wind: number, waves: number, rain: number): AptLabel {
   if (sport === "surf") {
     if (waves >= 1.2 && wind < 8 && rain < 2) return "excelente";
     if (waves >= 0.7 && wind < 12 && rain < 4) return "bueno";
     return "malo";
   }
-  if (wind >= 8 && wind <= 14 && rain < 2) return "excelente";
-  if (wind >= 6 && rain < 4) return "bueno";
+  if (sport === "kite") {
+    if (wind >= 8 && wind <= 14 && rain < 2) return "excelente";
+    if (wind >= 6 && rain < 4) return "bueno";
+    return "malo";
+  }
+  // kayak
+  if (rain < 3 && wind < 10) return "excelente";
+  if (rain < 6) return "bueno";
   return "malo";
 }
 
