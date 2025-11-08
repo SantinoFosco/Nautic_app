@@ -13,7 +13,16 @@ import {
 import "leaflet/dist/leaflet.css";
 import { useNavigate } from "react-router-dom";
 
-type Sport = "surf" | "kite";
+type Sport = "surf" | "kite" | "kayak";
+
+function normalizeSportName(name?: string | null): Sport | null {
+  if (!name) return null;
+  const n = name.trim().toLowerCase();
+  if (n.includes("kite")) return "kite";
+  if (n.includes("kayak")) return "kayak";
+  if (n.includes("surf")) return "surf";
+  return null;
+}
 
 type Spot = {
   name: string;
@@ -71,9 +80,23 @@ export default function MapView() {
   // === 2️⃣ Filtro por deporte ===
   const visibleSpots = useMemo(() => {
     if (selectedSports.length === 0) return spots;
-    return spots.filter((s) =>
-      s.sports?.some((sport) => selectedSports.includes(sport))
-    );
+    return spots.filter((s) =>{
+      if (s.type === "spot") {
+      const best = normalizeSportName(s.best_sport);
+      return best ? selectedSports.includes(best) : false;
+    }
+    // type === "business"
+    const sportsNorm = (s.sports ?? [])
+      .map((n) => normalizeSportName(n))
+      .filter(Boolean) as Sport[];
+      const matchesSports = sportsNorm.some((sp) => selectedSports.includes(sp));
+
+    // Opcional: también matchear por rubro del negocio (ej. "Escuela de Kitesurf")
+    const rubroNorm = normalizeSportName(s.rubro ?? null);
+    const matchesRubro = rubroNorm ? selectedSports.includes(rubroNorm) : false;
+
+    return matchesSports || matchesRubro;
+  });
   }, [selectedSports, spots]);
 
   const selectedSpot = visibleSpots.find((s) => s.name === selected);
@@ -120,7 +143,7 @@ export default function MapView() {
         <div className="flex flex-col gap-3 pointer-events-auto items-end">
           {/* Filtro de deporte */}
           <div className="flex gap-2">
-            {["surf", "kite"].map((sport) => (
+            {["surf", "kite", "kayak"].map((sport) => (
               <button
                 key={sport}
                 onClick={() => toggleSport(sport)}
