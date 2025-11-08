@@ -60,6 +60,6 @@ def login_owner(email: str, password: str, db: Session = Depends(get_db)):
         "message": "Inicio de sesión exitoso",
         "id_dueno": user.id,
         "email": user.email,
-        "tipo_usuario": user.tipo_usuario,
+        "tipo_usuario": user.tipo_usuario, #owner, admin
         "haveBusiness": have_business,
     }

@@ -4,7 +4,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_db
 from datetime import datetime, timedelta
-from app.models.models import VariableMeteorologica, TipoVariableMeteorologica, Spot, Deporte, DeporteSpot, Negocio, NegocioDeporte
+from app.models.models import (
+    VariableMeteorologica, 
+    TipoVariableMeteorologica, 
+    Spot, 
+    Deporte, 
+    DeporteSpot, 
+    Negocio, 
+    NegocioDeporte
+)
 from sqlalchemy import and_
 
 # Creamos el router específico para este grupo de endpoints

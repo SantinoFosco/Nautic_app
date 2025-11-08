@@ -19,7 +19,6 @@ router = APIRouter(
     tags=["Test - Visualización de datos"]
 )
 
-
 # ----------------------------
 # SPOTS
 # ----------------------------

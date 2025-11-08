@@ -2,7 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import func
 from app.core.database import get_db
-from app.models import Spot, Deporte, DeporteVariable, Negocio, Usuario
+from app.models.models import (
+    Spot, 
+    Deporte, 
+    DeporteVariable, 
+    Negocio, 
+    Usuario
+)
 import random
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
