@@ -10,8 +10,10 @@ from sqlalchemy import (
     Integer,
     PrimaryKeyConstraint,
     text,
-    Sequence
+    Sequence,
+    Enum
 )
+import enum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -168,6 +170,11 @@ class Usuario(Base):
 # Tabla Negocio
 # ------------------------------------------------------
 
+class EstadoNegocio(str, enum.Enum):
+    activo = "activo"
+    inactivo = "inactivo"
+    pendiente = "pendiente"
+
 class Negocio(Base):
     __tablename__ = "negocio"
 
@@ -182,8 +189,16 @@ class Negocio(Base):
     lat = Column(Numeric(10, 6), nullable=False)
     lon = Column(Numeric(10, 6), nullable=False)
     horarios = Column(String(255))  
-    activo = Column(Boolean, default=True)
-    activo_hasta = Column(Date)
+    estado = Column(
+        Enum(
+            EstadoNegocio,
+            name="estado_negocio",              # nombre del tipo en DB
+            native_enum=False,                  # guarda texto en vez de tipo ENUM nativo (portabilidad)
+            values_callable=lambda x: [e.value for e in x]  # 👈 hace que SQLA use los .value
+        ),
+        default=EstadoNegocio.pendiente,
+        nullable=False
+    )
     fecha_creacion = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     descripcion = Column(Text)
 

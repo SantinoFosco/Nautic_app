@@ -147,11 +147,22 @@ export default function MapView() {
             value={day}
             onChange={(e) => setDay(Number(e.target.value))}
           >
-            {[...Array(5)].map((_, i) => (
-              <option key={i} value={i}>
-                Día {i === 0 ? "0 (hoy)" : `+${i}`}
-              </option>
-            ))}
+            {[...Array(5)].map((_, i) => {
+              const date = new Date();
+              date.setDate(date.getDate() + i);
+
+              const formatted = date.toLocaleDateString("es-AR", {
+                weekday: "short",
+                day: "2-digit",
+                month: "2-digit",
+              });
+
+              return (
+                <option key={i} value={i}>
+                  {i === 0 ? `${formatted}` : formatted}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>

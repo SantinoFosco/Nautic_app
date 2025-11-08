@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from decimal import Decimal
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import func
 from app.core.database import get_db
@@ -6,7 +7,8 @@ from app.models.models import (
     Spot, 
     Deporte, 
     DeporteVariable, 
-    Negocio, 
+    Negocio,
+    EstadoNegocio, 
     Usuario
 )
 import random
@@ -65,7 +67,7 @@ def crear_deporte(
     # Variables (umbral, peso, operador, etc.)
     if variables:
         for v in variables:
-            if(v.get("nombre_variable") is "wind_speed" and v.get("operador") is "min" or v.get("operador") is "max" or v.get("operador") is "between"):
+            if(v.get("nombre_variable") == "wind_speed" and v.get("operador") == "min" or v.get("operador") == "max" or v.get("operador") == "between"):
                 nueva_var = DeporteVariable(
                     id_deporte=nuevo_deporte.id,
                     nombre_variable="wind_speed",
@@ -75,7 +77,7 @@ def crear_deporte(
                     operador=v.get("operador"),
                     estado="activo"
                 )
-            if(v.get("nombre_variable") is "wind_gustValue" and v.get("operador") is "min" or v.get("operador") is "max" or v.get("operador") is "between"):
+            if(v.get("nombre_variable") == "wind_gustValue" and v.get("operador") == "min" or v.get("operador") == "max" or v.get("operador") == "between"):
                 nueva_var = DeporteVariable(
                     id_deporte=nuevo_deporte.id,
                     nombre_variable="wind_gustValue",
@@ -85,7 +87,7 @@ def crear_deporte(
                     operador=v.get("operador"),
                     estado="activo"
                 )
-            if(v.get("nombre_variable") is "waveHeight" and v.get("operador") is "min" or v.get("operador") is "max" or v.get("operador") is "between"):
+            if(v.get("nombre_variable") == "waveHeight" and v.get("operador") == "min" or v.get("operador") == "max" or v.get("operador") == "between"):
                 nueva_var = DeporteVariable(
                     id_deporte=nuevo_deporte.id,
                     nombre_variable="waveHeight",
@@ -96,6 +98,32 @@ def crear_deporte(
                     estado="activo"
                 )
             db.add(nueva_var)
+
+        variables = [
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "uvIndex",                     "umbral_min": 0,   "umbral_max": 9,    "peso": 4,  "operador": "between"},
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "precipitation_probability",   "umbral_min": 0,   "umbral_max": 30,   "peso": 6,  "operador": "min"},
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "precipitation_qpfCuantity",   "umbral_min": 0,   "umbral_max": 3,    "peso": 6,  "operador": "min"},
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "cloudCover",                  "umbral_min": 0,   "umbral_max": 80,   "peso": 4,  "operador": "min"},
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "maxTemperature",              "umbral_min": 18,  "umbral_max": 35,   "peso": 5,  "operador": "between"},
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "minTemperature",              "umbral_min": 10,  "umbral_max": 30,   "peso": 5,  "operador": "between"},
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "feelsLikeMaxTemperature",     "umbral_min": 18,  "umbral_max": 38,   "peso": 5,  "operador": "between"},
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "feelsLikeMinTemperature",     "umbral_min": 12,  "umbral_max": 30,   "peso": 5,  "operador": "between"},
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "waterTemperature",            "umbral_min": 15,  "umbral_max": 30,   "peso": 6,  "operador": "between"},
+        {"id_deporte": nuevo_deporte.id, "nombre_variable": "wavePeriod",                  "umbral_min": 0,   "umbral_max": 8,    "peso": 2,  "operador": "between"}
+        ]
+
+        for v in variables:
+            nueva_var = DeporteVariable(
+                    id_deporte=v.get("id_deporte"),
+                    nombre_variable=v.get("nombre_variable"),
+                    umbral_min=v.get("umbral_min"),
+                    umbral_max=v.get("umbral_max"),
+                    peso=v.get("peso"),
+                    operador=v.get("operador"),
+                    estado="activo"
+                )
+            db.add(nueva_var)
+
         db.commit()
 
     return {"mensaje": "Deporte creado correctamente", "deporte": nuevo_deporte}
@@ -119,17 +147,22 @@ def cambiar_estado_deporte(deporte_id: int, db: Session = Depends(get_db)):
 # ------------------------------------------------------------
 @router.get("/negocios/pendientes")
 def negocios_pendientes(db: Session = Depends(get_db)):
-    pendientes = db.query(Negocio).filter(Negocio.activo == None).all()
+    pendientes = db.query(Negocio).filter(Negocio.estado == EstadoNegocio.pendiente).all()
     return pendientes
 
-@router.put("/negocios/{negocio_id}/estado")
-def aprobar_negocio(negocio_id: int, estado: bool, db: Session = Depends(get_db)):
+@router.put("/negocios/{negocio_id}")
+def aprobar_negocio(negocio_id: int, aprobado: bool = Query(...), lat: float = Query(...), lon: float = Query(...), db: Session = Depends(get_db)):
     negocio = db.query(Negocio).filter(Negocio.id_negocio == negocio_id).first()
     if not negocio:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
-    negocio.activo = estado
+    if(aprobado == True):
+        negocio.estado = EstadoNegocio.activo
+        negocio.lat = Decimal(str(lat))
+        negocio.lon = Decimal(str(lon))
+    else:
+        db.delete(negocio)
     db.commit()
-    return {"mensaje": f"Negocio {'aprobado y activado' if estado else 'rechazado o inactivo'} correctamente"}
+    return {"mensaje": f"Negocio {'aprobado y activado' if aprobado else 'rechazado y eliminado'} correctamente"}
 
 # ------------------------------------------------------------
 # 🔹 Métricas generales
@@ -137,8 +170,8 @@ def aprobar_negocio(negocio_id: int, estado: bool, db: Session = Depends(get_db)
 @router.get("/estadisticas")
 def estadisticas(db: Session = Depends(get_db)):
     total_negocios = db.query(func.count(Negocio.id_negocio)).scalar()
-    pendientes = db.query(Negocio).filter(Negocio.activo == None).count()
-    activos = db.query(Negocio).filter(Negocio.activo == True).count()
+    pendientes = db.query(Negocio).filter(Negocio.estado == EstadoNegocio.pendiente).count()
+    activos = db.query(Negocio).filter(Negocio.estado == EstadoNegocio.activo).count()
     usuarios = db.query(func.count(Usuario.id)).scalar()
 
     return {
@@ -162,12 +195,18 @@ def spots_aleatorios(db: Session = Depends(get_db)):
 # ------------------------------------------------------------
 @router.get("/negocios/info")
 def info_negocios(db: Session = Depends(get_db)):
-    negocios = db.query(
-        Negocio.id_negocio,
-        Negocio.nombre_fantasia,
-        Negocio.activo,
-        Negocio.direccion,
-        Negocio.telefono,
-        Negocio.email
-    ).all()
-    return [{"id": n.id_negocio, "nombre": n.nombre_fantasia, "activo": n.activo, "direccion": n.direccion, "telefono": n.telefono, "email": n.email} for n in negocios]
+    business_db = db.query(Negocio).all()
+
+    business_list = []
+
+    for b in business_db:
+        business_list.append({
+            "id": b.id_negocio,
+            "name": b.nombre_fantasia,
+            "estado": b.estado,
+            "direccion": b.direccion,
+            "telefono": b.telefono,
+            "email": b.email,
+        })
+
+    return business_list

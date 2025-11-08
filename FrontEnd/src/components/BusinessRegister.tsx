@@ -1,165 +1,191 @@
-export default function FAQ() {
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import businessIllustration from "../assets/business_illustration.svg";
+import { createBusiness } from "../api/businessOwner"; // 👈 conexión al backend
+
+export default function BusinessRegister() {
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "",
+    city: "",
+    phone: "",
+    email: "",
+    socials: "",
+    schedule: "",
+    description: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  // 🔹 Actualiza los campos del formulario
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  // 🔹 Enviar formulario al backend
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // Verifica que el dueño esté logueado
+    const id_dueno = localStorage.getItem("ownerId");
+    if (!id_dueno) {
+      alert("No hay un dueño logueado. Iniciá sesión primero.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      // Enviamos los datos al backend FastAPI
+      const res = await createBusiness({
+        id_dueno,
+        nombre_fantasia: formData.name,
+        rubro: formData.type,
+        sitio_web: formData.socials,
+        telefono: formData.phone,
+        email: formData.email,
+        direccion: formData.city,
+        horarios: formData.schedule,
+        descripcion: formData.description,
+      });
+
+      console.log("✅ Negocio creado correctamente:", res);
+      alert("Negocio creado correctamente ✅");
+
+      // 🔹 Redirige a la pantalla de éxito
+      navigate("/business-success");
+    } catch (err: any) {
+      console.error("❌ Error al crear negocio:", err);
+      alert("Error al crear el negocio. Verificá los datos.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="w-full min-h-[calc(100vh-64px)] bg-[#F7FAFC] flex justify-center items-start py-12">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-md p-8">
-        <h1 className="text-3xl font-bold text-[#0b2849] mb-10 text-center">
-          Preguntas Frecuentes (FAQ)
-        </h1>
+    // 🔹 Layout en dos columnas (azul 40% / formulario 60%)
+    <div className="grid w-full h-[calc(100vh-64px)] grid-cols-[40%_60%] overflow-hidden">
+      {/* Columna izquierda: imagen azul */}
+      <div className="flex justify-center items-center bg-[#59b7ff]">
+        <img
+          src={businessIllustration}
+          alt="Ilustración negocio"
+          className="w-[70%] max-w-[380px] h-auto object-contain"
+        />
+      </div>
 
-        {/* 🌊 SECCIÓN 1 — Usuarios que usan el mapa */}
-        <h2 className="text-2xl font-semibold text-[#0b2849] mb-4 border-b border-gray-300 pb-2">
-          🌊 Usuarios — Pronósticos y mapa
-        </h2>
-
-        <div className="space-y-2 mb-10">
-          {/* Pregunta 1 */}
-          <div
-            className="collapse collapse-arrow border border-base-300 text-[#0b2849]"
-            style={{ backgroundColor: "#59b7ff" }}
-          >
-            <input type="radio" name="faq-accordion-users" defaultChecked />
-            <div className="collapse-title font-semibold">
-              ¿Necesito una cuenta para ver los pronósticos?
-            </div>
-            <div className="collapse-content text-sm">
-              No, podés ver el mapa y los pronósticos de surf o kite sin iniciar sesión.  
-              La información del clima está disponible para todos los visitantes.
-            </div>
+      {/* Columna derecha: formulario */}
+      <div className="flex justify-center items-center bg-white">
+        <div className="w-full max-w-md px-8">
+          {/* Encabezado */}
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold text-[#0b2849]">
+              Registrá tu negocio
+            </h2>
+            <p className="text-gray-600 text-sm">
+              Completá los datos de tu escuela o emprendimiento
+            </p>
           </div>
 
-          {/* Pregunta 2 */}
-          <div
-            className="collapse collapse-arrow border border-base-300 text-[#0b2849]"
-            style={{ backgroundColor: "#59b7ff" }}
-          >
-            <input type="radio" name="faq-accordion-users" />
-            <div className="collapse-title font-semibold">
-              ¿Qué significan los colores de los puntos en el mapa?
-            </div>
-            <div className="collapse-content text-sm">
-              Los <span className="text-green-700 font-medium">verdes</span> indican condiciones
-              excelentes, los <span className="text-yellow-700 font-medium">amarillos</span> buenas
-              y los <span className="text-red-700 font-medium">rojos</span> condiciones poco
-              favorables para el deporte seleccionado.
-            </div>
-          </div>
+          {/* Formulario */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+            <input
+              name="name"
+              placeholder="Nombre del negocio"
+              value={formData.name}
+              onChange={handleChange}
+              className="input validator py-2"
+              required
+            />
 
-          {/* Pregunta 3 */}
-          <div
-            className="collapse collapse-arrow border border-base-300 text-[#0b2849]"
-            style={{ backgroundColor: "#59b7ff" }}
-          >
-            <input type="radio" name="faq-accordion-users" />
-            <div className="collapse-title font-semibold">
-              ¿Cómo cambio el deporte o el día del pronóstico?
-            </div>
-            <div className="collapse-content text-sm">
-              En el mapa, usá los botones de la esquina superior derecha para seleccionar el deporte
-              (<strong>Surf</strong> o <strong>Kite</strong>) y el selector de día para ver el clima
-              en los próximos días.
-            </div>
-          </div>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleChange}
+              className="w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-gray-800 focus:ring-2 focus:ring-[#0b2849] outline-none transition"
+              required
+            >
+              <option value="">Tipo de negocio</option>
+              <option value="Escuela de surf">Escuela de surf</option>
+              <option value="Escuela de kayak">Escuela de kayak</option>
+              <option value="Tienda náutica">Tienda náutica</option>
+              <option value="Otro">Otro</option>
+            </select>
 
-          {/* Pregunta 4 */}
-          <div
-            className="collapse collapse-arrow border border-base-300 text-[#0b2849]"
-            style={{ backgroundColor: "#59b7ff" }}
-          >
-            <input type="radio" name="faq-accordion-users" />
-            <div className="collapse-title font-semibold">
-              ¿Por qué algunos puntos del mapa no muestran datos?
-            </div>
-            <div className="collapse-content text-sm">
-              Puede que en esa zona no haya datos climáticos suficientes o el spot no tenga
-              información disponible para ese día.
-            </div>
-          </div>
-        </div>
+            <input
+              name="city"
+              placeholder="Dirección / Ciudad"
+              value={formData.city}
+              onChange={handleChange}
+              className="input validator py-2"
+            />
 
-        {/* 🏪 SECCIÓN 2 — Dueños de negocios */}
-        <h2 className="text-2xl font-semibold text-[#0b2849] mb-4 border-b border-gray-300 pb-2">
-          🏪 Dueños de negocios — Registro y gestión
-        </h2>
+            <input
+              name="phone"
+              placeholder="Teléfono / WhatsApp"
+              value={formData.phone}
+              onChange={handleChange}
+              className="input validator py-2"
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email de contacto"
+              value={formData.email}
+              onChange={handleChange}
+              className="input validator py-2"
+            />
+            <input
+              name="socials"
+              placeholder="Redes sociales / web"
+              value={formData.socials}
+              onChange={handleChange}
+              className="input validator py-2"
+            />
+            <input
+              name="schedule"
+              placeholder="Horario"
+              value={formData.schedule}
+              onChange={handleChange}
+              className="input validator py-2"
+            />
 
-        <div className="space-y-2">
-          {/* Pregunta 1 */}
-          <div
-            className="collapse collapse-arrow border border-base-300 text-[#0b2849]"
-            style={{ backgroundColor: "#59b7ff" }}
-          >
-            <input type="radio" name="faq-accordion-business" defaultChecked />
-            <div className="collapse-title font-semibold">
-              ¿Cómo registro mi negocio en la plataforma?
-            </div>
-            <div className="collapse-content text-sm">
-              Primero creá una cuenta haciendo clic en <strong>“Unite a nosotros”</strong>.  
-              Luego iniciá sesión, accedé a la sección <strong>“Negocios”</strong> y elegí{" "}
-              <strong>“Crear mi negocio”</strong> para completar los datos del establecimiento.
-            </div>
-          </div>
+            <textarea
+              name="description"
+              placeholder="Descripción"
+              value={formData.description}
+              onChange={handleChange}
+              rows={2}
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-2 text-gray-800 focus:ring-2 focus:ring-[#0b2849] outline-none resize-none transition"
+            />
 
-          {/* Pregunta 2 */}
-          <div
-            className="collapse collapse-arrow border border-base-300 text-[#0b2849]"
-            style={{ backgroundColor: "#59b7ff" }}
-          >
-            <input type="radio" name="faq-accordion-business" />
-            <div className="collapse-title font-semibold">
-              ¿Por qué mi negocio no aparece en el mapa?
-            </div>
-            <div className="collapse-content text-sm">
-              Los negocios nuevos deben ser aprobados antes de mostrarse públicamente.  
-              Una vez verificado, tu negocio aparecerá automáticamente en el mapa con un
-              marcador azul.
-            </div>
-          </div>
+            {/* Botones */}
+            <div className="flex justify-between gap-4 mt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className={`${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[#0b2849] hover:bg-[#143b6b]"
+                } text-white font-semibold py-2 rounded-full transition w-full`}
+              >
+                {loading ? "Enviando..." : "Enviar solicitud"}
+              </button>
 
-          {/* Pregunta 3 */}
-          <div
-            className="collapse collapse-arrow border border-base-300 text-[#0b2849]"
-            style={{ backgroundColor: "#59b7ff" }}
-          >
-            <input type="radio" name="faq-accordion-business" />
-            <div className="collapse-title font-semibold">
-              ¿Puedo tener más de un negocio registrado?
+              <button
+                type="button"
+                onClick={() => navigate("/business")}
+                className="bg-gray-100 text-gray-600 font-semibold py-2 rounded-full hover:bg-gray-200 transition w-full"
+              >
+                Cancelar
+              </button>
             </div>
-            <div className="collapse-content text-sm">
-              No, actualmente cada cuenta de dueño solo puede administrar un negocio.
-              Si querés registrar otro, deberás crear una nueva cuenta de usuario.
-            </div>
-          </div>
-
-          {/* Pregunta 4 */}
-          <div
-            className="collapse collapse-arrow border border-base-300 text-[#0b2849]"
-            style={{ backgroundColor: "#59b7ff" }}
-          >
-            <input type="radio" name="faq-accordion-business" />
-            <div className="collapse-title font-semibold">
-              ¿Cómo edito la información de mi negocio?
-            </div>
-            <div className="collapse-content text-sm">
-              En la sección <strong>“Negocios”</strong>, seleccioná tu negocio y hacé clic en{" "}
-              <strong>“Editar”</strong>. Desde ahí podés actualizar horarios, contacto,
-              descripción y otros datos.
-            </div>
-          </div>
-
-          {/* Pregunta 5 */}
-          <div
-            className="collapse collapse-arrow border border-base-300 text-[#0b2849]"
-            style={{ backgroundColor: "#59b7ff" }}
-          >
-            <input type="radio" name="faq-accordion-business" />
-            <div className="collapse-title font-semibold">
-              ¿Qué pasa si olvidé mi contraseña?
-            </div>
-            <div className="collapse-content text-sm">
-              En la pantalla de inicio de sesión, hacé clic en{" "}
-              <strong>“¿Olvidaste tu contraseña?”</strong> y seguí las instrucciones
-              para restablecerla por correo electrónico.
-            </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

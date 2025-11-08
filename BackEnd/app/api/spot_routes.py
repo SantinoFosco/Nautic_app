@@ -11,7 +11,8 @@ from app.models.models import (
     Deporte, 
     DeporteSpot, 
     Negocio, 
-    NegocioDeporte
+    NegocioDeporte,
+    EstadoNegocio
 )
 from sqlalchemy import and_
 
@@ -58,7 +59,7 @@ async def get_spots(day: int = Query(...), db: Session = Depends(get_db)):
 @router.get("/business_list")
 async def get_business_spots(db: Session = Depends(get_db)):
     """Devuelve todos los negocios activos con sus coordenadas y deportes asociados"""
-    business_db = db.query(Negocio).filter(Negocio.activo == True).all()
+    business_db = db.query(Negocio).filter(Negocio.estado == EstadoNegocio.activo).all()
 
     business_list = []
 
@@ -89,7 +90,7 @@ async def get_business_spots(db: Session = Depends(get_db)):
 
 @router.get("/business_details")
 async def get_business_details(lat: float = Query(...), lon: float = Query(...), db: Session = Depends(get_db)):
-    business = (db.query(Negocio).filter(Negocio.activo == True, Negocio.lat == lat, Negocio.lon == lon).first())
+    business = (db.query(Negocio).filter(Negocio.estado == EstadoNegocio.activo, Negocio.lat == lat, Negocio.lon == lon).first())
 
     if not business:
         return {}

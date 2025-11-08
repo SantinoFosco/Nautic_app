@@ -2,7 +2,7 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models.models import Usuario, Negocio
+from app.models.models import Usuario, Negocio, EstadoNegocio
 from datetime import datetime
 
 router = APIRouter(prefix="/business_owner", tags=["Business Owner"])
@@ -64,8 +64,6 @@ def create_business(
     telefono: str = None,
     email: str = None,
     direccion: str = None,
-    latitud: float = None,
-    longitud: float = None,
     horarios: str = None,
     descripcion: str = None,
     db: Session = Depends(get_db)
@@ -82,14 +80,13 @@ def create_business(
         telefono=telefono,
         email=email,
         direccion=direccion,
-        lat=Decimal(str(latitud)) if latitud is not None else None,
-        lon=Decimal(str(longitud)) if longitud is not None else None,
+        lat=Decimal("0.0"),
+        lon=Decimal("0.0"),
         horarios=horarios,
         descripcion=descripcion,
-        activo=True,
+        estado=EstadoNegocio.pendiente,
         fecha_creacion=datetime.utcnow()
     )
-
 
     db.add(nuevo_negocio)
     db.commit()
@@ -103,6 +100,10 @@ def create_business(
 @router.get("/my_business")
 def list_my_business(id_dueno: int, db: Session = Depends(get_db)):
     negocio = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
+
+    if negocio.estado == EstadoNegocio.pendiente:
+        raise HTTPException(status_code=404, detail="Negocio pendiente de aprobación")
+    
     return [
         {
             "nombre_fantasia": negocio.nombre_fantasia,
@@ -114,8 +115,7 @@ def list_my_business(id_dueno: int, db: Session = Depends(get_db)):
             "lat": float(negocio.lat) if negocio.lat is not None else None,
             "lon": float(negocio.lon) if negocio.lon is not None else None,
             "horarios": negocio.horarios,
-            "descripcion": negocio.descripcion,
-            "activo": negocio.activo
+            "descripcion": negocio.descripcion
         }
     ]
 
@@ -165,7 +165,7 @@ def deactivate_business(id_dueno: int, db: Session = Depends(get_db)):
     if not negocio:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 
-    negocio.activo = True
+    negocio.estado = EstadoNegocio.activo
     db.commit()
     return {"message": "Negocio activado correctamente"}
 
@@ -178,6 +178,6 @@ def deactivate_business(id_dueno: int, db: Session = Depends(get_db)):
     if not negocio:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 
-    negocio.activo = False
+    negocio.estado = EstadoNegocio.inactivo
     db.commit()
     return {"message": "Negocio desactivado correctamente"}
