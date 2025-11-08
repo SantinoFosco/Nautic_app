@@ -28,13 +28,14 @@ export async function getPendingBusinesses() {
 export async function getActiveSpots() {
   return apiGET<
     {
+      id: number;
       nombre: string;
       tipo: string;
       lat: number;
       lon: number;
       activo: boolean;
     }[]
-  >("/admin/spots/aleatorios");
+  >("/admin/spots/activos");
 }
 
 // 🔹 Aprobar o rechazar negocio

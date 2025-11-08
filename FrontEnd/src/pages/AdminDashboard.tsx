@@ -3,7 +3,7 @@ import {
   getDashboardStats,
   getPendingBusinesses,
   getActiveSpots,
-} from "../api/admin";
+} from "../api/admin"; // ✅ usa tu carpeta /api
 
 import {
   MapPin,
@@ -23,7 +23,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // 🔹 Traer datos del backend al cargar
+  // 🔹 Cargar datos al montar
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -43,7 +43,6 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
@@ -101,14 +100,14 @@ export default function AdminDashboard() {
             label="Pendientes de aprobación"
           />
           <MetricCard
-            icon={<Users className="w-7 h-7 text-[#0b2849]" />}
-            value={data?.usuarios_registrados ?? 0}
-            label="Usuarios registrados"
-          />
-          <MetricCard
             icon={<CheckCircle className="w-7 h-7 text-[#0b2849]" />}
             value={data?.negocios_activos ?? 0}
             label="Negocios activos"
+          />
+          <MetricCard
+            icon={<Users className="w-7 h-7 text-[#0b2849]" />}
+            value={data?.usuarios_registrados ?? 0}
+            label="Usuarios registrados"
           />
         </div>
 
@@ -120,15 +119,17 @@ export default function AdminDashboard() {
               Negocios pendientes
             </h3>
             {negociosPendientes.length > 0 ? (
-              negociosPendientes.map((n, i) => (
-                <BusinessCard
-                  key={i}
-                  name={n.nombre_fantasia || "Sin nombre"}
-                  type={n.rubro || "—"}
-                  location={n.direccion || "—"}
-                  status="Pendiente"
-                />
-              ))
+              <div className="max-h-[400px] overflow-y-auto pr-2">
+                {negociosPendientes.map((n, i) => (
+                  <BusinessCard
+                    key={i}
+                    name={n.nombre_fantasia || "Sin nombre"}
+                    type={n.rubro || "—"}
+                    location={n.direccion || "—"}
+                    status="Pendiente"
+                  />
+                ))}
+              </div>
             ) : (
               <p className="text-gray-500 text-sm">
                 No hay negocios pendientes.
@@ -142,16 +143,18 @@ export default function AdminDashboard() {
               Spots activos
             </h3>
             {spotsActivos.length > 0 ? (
-              spotsActivos.map((s, i) => (
-                <ActiveSpot
-                  key={i}
-                  name={s.nombre}
-                  type={s.tipo}
-                  location={
-                    s.lat ? `${s.lat.toFixed(2)}, ${s.lon.toFixed(2)}` : ""
-                  }
-                />
-              ))
+              <div className="max-h-[400px] overflow-y-auto pr-2">
+                {spotsActivos.map((s, i) => (
+                  <ActiveSpot
+                    key={i}
+                    name={s.nombre}
+                    type={s.tipo}
+                    location={
+                      s.lat ? `${s.lat.toFixed(2)}, ${s.lon.toFixed(2)}` : ""
+                    }
+                  />
+                ))}
+              </div>
             ) : (
               <p className="text-gray-500 text-sm">No hay spots activos.</p>
             )}
