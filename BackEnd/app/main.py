@@ -21,5 +21,5 @@ app.add_middleware(
 app.include_router(spot_routes.router)
 app.include_router(business_owner_routes.router)
 app.include_router(user_routes.router)
-#app.include_router(admin_routes.router)
+app.include_router(admin_routes.router)
 app.include_router(test_routes.router)

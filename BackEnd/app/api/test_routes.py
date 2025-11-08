@@ -1,4 +1,5 @@
 # app/api/test_routes.py
+from http.client import HTTPException
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_db
@@ -10,6 +11,7 @@ from app.models.models import (
     TipoVariableMeteorologica,
     DeporteSpot,
     ProveedorDatos,
+    Negocio,
 )
 
 router = APIRouter(
@@ -151,3 +153,31 @@ def get_all_proveedores(db: Session = Depends(get_db)):
         }
         for p in proveedores
     ]
+
+
+# ------------------------------------------------------------
+# 🔹 Eliminar Spot por ID
+# ------------------------------------------------------------
+@router.delete("/spots/{spot_id}")
+def eliminar_spot(spot_id: int, db: Session = Depends(get_db)):
+    spot = db.query(Spot).filter(Spot.id == spot_id).first()
+    if not spot:
+        raise HTTPException(status_code=404, detail="Spot no encontrado")
+    
+    db.delete(spot)
+    db.commit()
+    return {"mensaje": f"Spot con ID {spot_id} eliminado correctamente"}
+
+
+# ------------------------------------------------------------
+# 🔹 Eliminar Negocio por ID
+# ------------------------------------------------------------
+@router.delete("/negocios/{negocio_id}")
+def eliminar_negocio(negocio_id: int, db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_negocio == negocio_id).first()
+    if not negocio:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+    
+    db.delete(negocio)
+    db.commit()
+    return {"mensaje": f"Negocio con ID {negocio_id} eliminado correctamente"}
