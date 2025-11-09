@@ -22,8 +22,8 @@ export async function loginOwner(payload: { email: string; password: string }) {
   );
 }
 
-// 🟩 Crear negocio (usa /business_owner/new_business)
-export async function createBusiness(payload: {
+// ✅ Interfaz tipada para crear negocio
+export interface CreateBusinessPayload {
   id_dueno: string;
   nombre_fantasia: string;
   rubro?: string;
@@ -31,11 +31,15 @@ export async function createBusiness(payload: {
   telefono?: string;
   email?: string;
   direccion?: string;
-  latitud?: string;
-  longitud?: string;
   horarios?: string;
   descripcion?: string;
-}) {
+  id_deporte1: number;          // 👈 deporte principal (obligatorio)
+  id_deporte2?: number | null;  // 👈 opcional
+  id_deporte3?: number | null;  // 👈 opcional
+}
+
+// 🟩 Crear negocio (usa /business_owner/new_business)
+export async function createBusiness(payload: CreateBusinessPayload) {
   return apiFormPOST<{ message: string; id_negocio: number }>(
     "/business_owner/new_business",
     payload
@@ -61,6 +65,14 @@ export async function listMyBusinesses(id_dueno: string) {
   >(`/business_owner/my_business?id_dueno=${id_dueno}`);
 }
 
+// 🟦 Obtener lista de deportes (usa /deporte/list)
+export async function listSports() {
+  return apiGET<{ id: number; nombre: string; codigo: string; descripcion: string }[]>(
+    "/deporte/list"
+  );
+}
+
+// 🟩 Obtener información general de negocios (ej: para el mapa o panel)
 export type BusinessInfo = {
   id: number;
   nombre_fantasia: string;

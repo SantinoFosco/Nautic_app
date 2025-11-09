@@ -188,13 +188,20 @@ class Negocio(Base):
     direccion = Column(String(255))
     lat = Column(Numeric(10, 6), nullable=False)
     lon = Column(Numeric(10, 6), nullable=False)
-    horarios = Column(String(255))  
+    horarios = Column(String(255))
+    
+    # 👇 Deporte principal obligatorio
+    id_deporte1 = Column(Integer, ForeignKey("deporte.id"), nullable=False)
+    # 👇 Deportes secundarios opcionales
+    id_deporte2 = Column(Integer, ForeignKey("deporte.id"), nullable=True)
+    id_deporte3 = Column(Integer, ForeignKey("deporte.id"), nullable=True)
+
     estado = Column(
         Enum(
             EstadoNegocio,
-            name="estado_negocio",              # nombre del tipo en DB
-            native_enum=False,                  # guarda texto en vez de tipo ENUM nativo (portabilidad)
-            values_callable=lambda x: [e.value for e in x]  # 👈 hace que SQLA use los .value
+            name="estado_negocio",
+            native_enum=False,
+            values_callable=lambda x: [e.value for e in x],
         ),
         default=EstadoNegocio.pendiente,
         nullable=False
@@ -203,9 +210,10 @@ class Negocio(Base):
     descripcion = Column(Text)
 
     # Relaciones
-    deportes = relationship("NegocioDeporte", backref="negocio")
     usuario = relationship("Usuario", back_populates="negocios")
-
+    deporte1 = relationship("Deporte", foreign_keys=[id_deporte1])
+    deporte2 = relationship("Deporte", foreign_keys=[id_deporte2])
+    deporte3 = relationship("Deporte", foreign_keys=[id_deporte3])
 # ------------------------------------------------------
 # Tabla intermedia Negocio_Deporte
 # ------------------------------------------------------
@@ -218,4 +226,4 @@ class NegocioDeporte(Base):
 
     __table_args__ = (
         PrimaryKeyConstraint("id_negocio", "id_deporte"),
-    )
+   )

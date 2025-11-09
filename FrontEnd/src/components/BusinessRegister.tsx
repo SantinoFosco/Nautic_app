@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import businessIllustration from "../assets/business_illustration.svg";
-import { createBusiness } from "../api/businessOwner"; // 👈 conexión al backend
+import { createBusiness, listSports } from "../api/businessOwner";
 
 export default function BusinessRegister() {
   const navigate = useNavigate();
@@ -17,59 +17,93 @@ export default function BusinessRegister() {
     description: "",
   });
 
+  const [selectedSports, setSelectedSports] = useState<number[]>([]);
+  const [sportsOptions, setSportsOptions] = useState<{ id: number; nombre: string }[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 🔹 Actualiza los campos del formulario
+  // 🔹 Traer los deportes desde el backend al montar el componente
+  useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        const res = await listSports();
+        setSportsOptions(res); // carga los deportes activos
+      } catch (err) {
+        console.error("❌ Error al obtener los deportes:", err);
+      }
+    };
+    fetchSports();
+  }, []);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // 🔹 Enviar formulario al backend
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    // Verifica que el dueño esté logueado
-    const id_dueno = localStorage.getItem("ownerId");
-    if (!id_dueno) {
-      alert("No hay un dueño logueado. Iniciá sesión primero.");
-      navigate("/login");
+  const handleSportsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const values = Array.from(e.target.selectedOptions, (opt) => Number(opt.value));
+    if (values.length > 3) {
+      alert("Solo podés seleccionar hasta 3 deportes.");
       return;
     }
-
-    try {
-      // Enviamos los datos al backend FastAPI
-      const res = await createBusiness({
-        id_dueno,
-        nombre_fantasia: formData.name,
-        rubro: formData.type,
-        sitio_web: formData.socials,
-        telefono: formData.phone,
-        email: formData.email,
-        direccion: formData.city,
-        horarios: formData.schedule,
-        descripcion: formData.description,
-      });
-
-      console.log("✅ Negocio creado correctamente:", res);
-      alert("Negocio creado correctamente ✅");
-
-      // 🔹 Redirige a la pantalla de éxito
-      navigate("/business-success");
-    } catch (err: any) {
-      console.error("❌ Error al crear negocio:", err);
-      alert("Error al crear el negocio. Verificá los datos.");
-    } finally {
-      setLoading(false);
-    }
+    setSelectedSports(values);
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+
+  const id_dueno = localStorage.getItem("ownerId");
+  if (!id_dueno) {
+    alert("No hay un dueño logueado. Iniciá sesión primero.");
+    navigate("/login");
+    return;
+  }
+
+  if (selectedSports.length === 0) {
+    alert("Debes seleccionar al menos un deporte.");
+    setLoading(false);
+    return;
+  }
+
+  // 🔹 Convertimos a número y eliminamos nulos correctamente
+  const [id_deporte1, id_deporte2, id_deporte3] = [
+    Number(selectedSports[0]),
+    selectedSports[1] ? Number(selectedSports[1]) : undefined,
+    selectedSports[2] ? Number(selectedSports[2]) : undefined,
+  ];
+
+  try {
+    // ✅ Armamos payload sin "null" ni strings
+    const payload = {
+      id_dueno: String(id_dueno),
+      nombre_fantasia: formData.name,
+      rubro: formData.type,
+      sitio_web: formData.socials,
+      telefono: formData.phone,
+      email: formData.email,
+      direccion: formData.city,
+      horarios: formData.schedule,
+      descripcion: formData.description,
+      id_deporte1,
+      ...(id_deporte2 ? { id_deporte2 } : {}), // solo si existen
+      ...(id_deporte3 ? { id_deporte3 } : {}),
+    };
+
+    const res = await createBusiness(payload);
+    console.log("✅ Negocio creado correctamente:", res);
+    alert("Negocio creado correctamente ✅");
+    navigate("/business-success");
+  } catch (err) {
+    console.error("❌ Error al crear negocio:", err);
+    alert("Error al crear el negocio. Verificá los datos.");
+  } finally {
+    setLoading(false);
+  }
+};
+
   return (
-    // 🔹 Layout en dos columnas (azul 40% / formulario 60%)
     <div className="grid w-full h-[calc(100vh-64px)] grid-cols-[40%_60%] overflow-hidden">
-      {/* Columna izquierda: imagen azul */}
       <div className="flex justify-center items-center bg-[#59b7ff]">
         <img
           src={businessIllustration}
@@ -78,20 +112,15 @@ export default function BusinessRegister() {
         />
       </div>
 
-      {/* Columna derecha: formulario */}
       <div className="flex justify-center items-center bg-white">
         <div className="w-full max-w-md px-8">
-          {/* Encabezado */}
           <div className="text-center mb-6">
-            <h2 className="text-3xl font-bold text-[#0b2849]">
-              Registrá tu negocio
-            </h2>
+            <h2 className="text-3xl font-bold text-[#0b2849]">Registrá tu negocio</h2>
             <p className="text-gray-600 text-sm">
               Completá los datos de tu escuela o emprendimiento
             </p>
           </div>
 
-          {/* Formulario */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-2">
             <input
               name="name"
@@ -115,6 +144,49 @@ export default function BusinessRegister() {
               <option value="Tienda náutica">Tienda náutica</option>
               <option value="Otro">Otro</option>
             </select>
+
+<label className="mt-2 text-gray-700 font-semibold text-sm">
+  Seleccioná los deportes relacionados al negocio
+</label>
+
+<div className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-800 focus-within:ring-2 focus-within:ring-[#0b2849] transition">
+  <div className="grid grid-cols-2 gap-2">
+    {sportsOptions.map((sport) => (
+      <label
+        key={sport.id}
+        className={`flex items-center gap-2 cursor-pointer rounded-xl px-3 py-2 border transition ${
+          selectedSports.includes(sport.id)
+            ? "border-[#0b2849] bg-[#eaf2fb]"
+            : "border-gray-200 hover:border-[#0b2849]/40"
+        }`}
+      >
+        <input
+          type="checkbox"
+          value={sport.id}
+          checked={selectedSports.includes(sport.id)}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            let updated: number[];
+
+            if (selectedSports.includes(value)) {
+              updated = selectedSports.filter((id) => id !== value);
+            } else {
+              if (selectedSports.length >= 3) {
+                alert("Solo podés seleccionar hasta 3 deportes.");
+                return;
+              }
+              updated = [...selectedSports, value];
+            }
+
+            setSelectedSports(updated);
+          }}
+          className="accent-[#0b2849] w-4 h-4"
+        />
+        <span className="text-sm">{sport.nombre}</span>
+      </label>
+    ))}
+  </div>
+</div>
 
             <input
               name="city"
@@ -163,7 +235,6 @@ export default function BusinessRegister() {
               className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-2 text-gray-800 focus:ring-2 focus:ring-[#0b2849] outline-none resize-none transition"
             />
 
-            {/* Botones */}
             <div className="flex justify-between gap-4 mt-4">
               <button
                 type="submit"
