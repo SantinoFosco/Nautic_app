@@ -68,22 +68,29 @@ async def get_business_spots(db: Session = Depends(get_db)):
         lat = float(b.lat) if b.lat is not None else None
         lon = float(b.lon) if b.lon is not None else None
 
-        # Obtener nombres de deportes asociados al negocio
-        deportes = (
-            db.query(Deporte.nombre)
-            .join(NegocioDeporte, Deporte.id == NegocioDeporte.id_deporte)
-            .filter(NegocioDeporte.id_negocio == b.id_negocio)
-            .all()
-        )
-
-        deportes_nombres = [d[0] for d in deportes]  # convertir a lista simple
+        # Obtener nombres de deportes directamente desde las relaciones
+        deportes = []
+        if b.deporte1:
+            deportes.append(b.deporte1.nombre)
+        if b.deporte2:
+            deportes.append(b.deporte2.nombre)
+        if b.deporte3:
+            deportes.append(b.deporte3.nombre)
 
         business_list.append({
             "name": b.nombre_fantasia,
             "lat": lat,
             "lon": lon,
             "type": "business",
-            "sports": deportes_nombres
+            "sports": deportes,  # 👈 Esto ahora sí va a tener ["Surf"] o ["Kitesurf", "Surf"]
+            "rubro": b.rubro,
+            "direccion": b.direccion,
+            "telefono": b.telefono,
+            "email": b.email,
+            "sitio_web": b.sitio_web,
+            "horarios": b.horarios,
+            "descripcion": b.descripcion,
+            "estado": b.estado.value if hasattr(b.estado, "value") else str(b.estado),
         })
 
     return business_list
