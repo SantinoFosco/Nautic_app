@@ -29,13 +29,13 @@ export default function Navbar() {
       </div>
 
       {/* CENTRO: menú (centrado óptico) */}
-      <div className="absolute left-1/2 transform -translate-x-[45%]">
+      <div className="absolute left-1/2 transform -translate-x-1/2">
         <ul className="flex items-center gap-10 text-sm">
           <li>
-            <Link to="/" className={isActive("/")}>Inicio</Link>
+            <Link to="/" className={isActive("/")}>Mapa</Link>
           </li>
           <li>
-            <Link to="/map" className={isActive("/map")}>Mapa</Link>
+            <Link to="/spots" className={isActive("/spots")}>Spots</Link>
           </li>
           <li>
             <Link to="/negocios" className={isActive("/negocios")}>Negocios</Link>

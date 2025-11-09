@@ -12,6 +12,7 @@ import BusinessPanel from "./components/BusinessPanel";
 import BusinessEmptyState from "./components/BusinessEmptyState";
 import FAQ from "./components/FAQ";
 import BusinessesPage from "./pages/BusinessesPage";
+import SpotsPage from "./pages/SpotsPage";
 
 
 function Layout() {
@@ -53,6 +54,7 @@ function Layout() {
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/business-empty" element={<BusinessEmptyState />} />
           <Route path="/business" element={<BusinessPanel />} />
+          <Route path="/spots" element={<SpotsPage />} />
           <Route path="/negocios" element={<BusinessesPage />} />
           <Route path="/faq" element={<FAQ />} />
         </Routes>

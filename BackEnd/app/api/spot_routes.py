@@ -14,7 +14,7 @@ from app.models.models import (
     NegocioDeporte,
     EstadoNegocio
 )
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 
 # Creamos el router específico para este grupo de endpoints
 router = APIRouter(prefix="/spot", tags=["Spots"])
@@ -110,7 +110,7 @@ async def get_business_details(lat: float = Query(...), lon: float = Query(...),
 # ------------------------------------------------------------
 @router.get("/businesses/info")
 def get_businesses_info(db: Session = Depends(get_db)):
-    business_db = db.query(Negocio).all()
+    business_db = db.query(Negocio).filter(or_(Negocio.estado == EstadoNegocio.activo, Negocio.estado == EstadoNegocio.inactivo)).all()
 
     business_list = []
 
@@ -228,7 +228,9 @@ async def get_sportspoints(
     ]
     """
     # 1) Calcular fecha objetivo
-    target_date = (datetime.utcnow() + timedelta(days=day - 1)).date()
+    target_date = (datetime.utcnow() + timedelta(days=day)).date()
+
+    print("Fecha objetivo:", target_date)
 
     # 2) Buscar spot exacto por coordenadas (ahora usando Numeric → convertir a Decimal)
     from decimal import Decimal

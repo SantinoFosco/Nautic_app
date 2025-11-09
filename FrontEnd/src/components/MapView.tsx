@@ -296,12 +296,6 @@ export default function MapView() {
                 </div>
               ) : data[selectedSpot.name] ? (
                 <>
-                  <div className="text-xs text-slate-500">
-                    Día {day} • Deporte:{" "}
-                    <span className="font-semibold">
-                      {pickSportForSpot(selectedSports, selectedSpot.sports || []).toUpperCase()}
-                    </span>
-                  </div>
                   <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
                     <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.name].temperature_2m ?? 0}°C`} />
                     <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.name].wind_speed_10m ?? 0} m/s`} />

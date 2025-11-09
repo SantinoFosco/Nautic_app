@@ -72,7 +72,7 @@ export default function BusinessesPage() {
             Todos los negocios
           </h1>
           <p className="text-gray-600">
-            Gestioná todos los negocios registrados en la plataforma
+            Explorá todos los negocios registrados en la plataforma
           </p>
         </header>
 

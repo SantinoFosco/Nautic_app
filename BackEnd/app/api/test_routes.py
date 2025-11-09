@@ -162,7 +162,17 @@ def eliminar_spot(spot_id: int, db: Session = Depends(get_db)):
     spot = db.query(Spot).filter(Spot.id == spot_id).first()
     if not spot:
         raise HTTPException(status_code=404, detail="Spot no encontrado")
-    
+
+    # Eliminar variables meteorológicas asociadas al spot
+    db.query(VariableMeteorologica).filter(
+        VariableMeteorologica.id_spot == spot_id
+    ).delete(synchronize_session=False)
+
+    # Eliminar asociaciones de deportes con el spot
+    db.query(DeporteSpot).filter(
+        DeporteSpot.id_spot == spot_id
+    ).delete(synchronize_session=False)
+
     db.delete(spot)
     db.commit()
     return {"mensaje": f"Spot con ID {spot_id} eliminado correctamente"}
