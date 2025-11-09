@@ -13,12 +13,13 @@ import BusinessEmptyState from "./components/BusinessEmptyState";
 import FAQ from "./components/FAQ";
 import BusinessesPage from "./pages/BusinessesPage";
 import SpotsPage from "./pages/SpotsPage";
+import PendingBusinessesPage from "./pages/PendingBusinessesPage";
 
 
 function Layout() {
   const location = useLocation();
 
-  // 🔹 Páginas que deben mostrarse en "pantalla completa" (sin fondo gris)
+  // 🔹 Páginas que deben mostrarse en "pantalla completa" 
   const isFullScreen =
     location.pathname === "/register" ||
     location.pathname === "/login" ||
@@ -52,6 +53,7 @@ function Layout() {
           <Route path="/business-success" element={<BusinessSuccess />} />
           <Route path="/business-edit" element={<BusinessEdit />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/negocios-pendientes" element={<PendingBusinessesPage />} />
           <Route path="/business-empty" element={<BusinessEmptyState />} />
           <Route path="/business" element={<BusinessPanel />} />
           <Route path="/spots" element={<SpotsPage />} />

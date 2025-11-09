@@ -1,5 +1,19 @@
 import { apiGET, apiFormPOST } from "./client";
 
+// Definimos el tipo PendingBusiness 
+export type PendingBusiness = {
+  id_negocio: number;
+  nombre_fantasia: string;
+  rubro: string | null;
+  direccion: string | null;
+  telefono: string | null;
+  email: string | null;
+  sitio_web: string | null;
+  horarios: string | null;
+  descripcion: string | null;
+  fecha_creacion: string;
+};
+
 // 🔹 Obtener estadísticas generales
 export async function getDashboardStats() {
   return apiGET<{
@@ -12,16 +26,8 @@ export async function getDashboardStats() {
 
 // 🔹 Obtener lista de negocios pendientes
 export async function getPendingBusinesses() {
-  return apiGET<
-    {
-      id_negocio: number;
-      nombre_fantasia: string;
-      rubro: string;
-      direccion: string;
-      telefono: string;
-      email: string;
-    }[]
-  >("/admin/negocios/pendientes");
+  // Ahora usa el tipo que definimos arriba
+  return apiGET<PendingBusiness[]>("/admin/negocios/pendientes");
 }
 
 // 🔹 Obtener spots activos (aleatorios)
@@ -33,7 +39,7 @@ export async function getActiveSpots() {
       tipo: string;
       lat: number;
       lon: number;
-      activo: boolean;
+      // Tu backend no devuelve 'activo', así que lo quitamos del tipo
     }[]
   >("/admin/spots/activos");
 }
