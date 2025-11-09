@@ -2,7 +2,7 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models.models import Usuario, Negocio, EstadoNegocio, Deporte
+from app.models.models import Usuario, Negocio, EstadoNegocio, Deporte, NegocioDeporte
 from datetime import datetime
 
 router = APIRouter(prefix="/business_owner", tags=["Business Owner"])
@@ -72,21 +72,12 @@ def create_business(
     dueno = db.query(Usuario).filter(Usuario.id == id_dueno).first()
     if not dueno:
         raise HTTPException(status_code=404, detail="Dueño no encontrado")
-
-    # 🔍 Validar que el primer deporte exista (obligatorio)
-    deporte_principal = db.query(Deporte).filter(Deporte.id == id_deporte1).first()
-    if not deporte_principal:
-        raise HTTPException(status_code=400, detail="El deporte principal (id_deporte1) no existe")
-
-    # Validar secundarios si fueron enviados
-    if id_deporte2:
-        if not db.query(Deporte).filter(Deporte.id == id_deporte2).first():
-            raise HTTPException(status_code=400, detail="El deporte secundario 2 no existe")
-    if id_deporte3:
-        if not db.query(Deporte).filter(Deporte.id == id_deporte3).first():
-            raise HTTPException(status_code=400, detail="El deporte secundario 3 no existe")
+    
+    ultimo_negocio = db.query(Negocio).order_by(Negocio.id.desc()).first()
+    siguiente_num = 1 if not ultimo_negocio else (ultimo_negocio.id + 1)
 
     nuevo_negocio = Negocio(
+        id_negocio=siguiente_num,
         id_dueno=dueno.id,
         nombre_fantasia=nombre_fantasia,
         rubro=rubro,
@@ -98,9 +89,6 @@ def create_business(
         lon=Decimal("0.0"),
         horarios=horarios,
         descripcion=descripcion,
-        id_deporte1=id_deporte1,
-        id_deporte2=id_deporte2,
-        id_deporte3=id_deporte3,
         estado=EstadoNegocio.pendiente,
         fecha_creacion=datetime.utcnow()
     )
@@ -108,6 +96,16 @@ def create_business(
     db.add(nuevo_negocio)
     db.commit()
     db.refresh(nuevo_negocio)
+
+    deportes = [id_deporte1, id_deporte2, id_deporte3]
+
+    for id_deporte in deportes:
+        nuevo_negocioDeporte = NegocioDeporte(
+            id_negocio=siguiente_num,
+            id_deporte=id_deporte
+        )
+        db.add(nuevo_negocioDeporte)
+        db.commit()
 
     return {
         "message": "Negocio creado correctamente",

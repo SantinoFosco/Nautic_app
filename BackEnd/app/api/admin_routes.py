@@ -57,7 +57,6 @@ def crear_deporte(
     # Buscar el último código existente (prefijo DPT)
     ultimo_deporte = db.query(Deporte).order_by(Deporte.id.desc()).first()
     siguiente_num = 1 if not ultimo_deporte else (ultimo_deporte.id + 1)
-    codigo = generar_codigo("SPT", siguiente_num)
 
     nuevo_deporte = Deporte(codigo=codigo, nombre=nombre, descripcion=descripcion, activo=True)
     db.add(nuevo_deporte)
@@ -90,6 +89,7 @@ def crear_deporte(
             if(v.get("nombre_variable") == "waveHeight" and v.get("operador") == "min" or v.get("operador") == "max" or v.get("operador") == "between"):
                 nueva_var = DeporteVariable(
                     id_deporte=nuevo_deporte.id,
+                    .
                     nombre_variable="waveHeight",
                     umbral_min=v.get("umbral_min"),
                     umbral_max=v.get("umbral_max"),
