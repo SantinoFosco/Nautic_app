@@ -25,3 +25,19 @@ export async function apiFormPOST<T>(
 
   return res.json();
 }
+
+export async function apiFormPUT<T>(
+  url: string,
+  data: Record<string, any>
+): Promise<T> {
+  const query = new URLSearchParams(data).toString();
+  const res = await fetch(`${BASE_URL}${url}?${query}`, {
+    method: "PUT",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error PUT ${url}: ${res.status}`);
+  }
+
+  return res.json();
+}

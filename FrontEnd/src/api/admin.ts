@@ -1,4 +1,4 @@
-import { apiGET, apiFormPOST } from "./client";
+import { apiGET, apiFormPOST, apiFormPUT } from "./client";
 
 // Definimos el tipo PendingBusiness 
 export type PendingBusiness = {
@@ -51,8 +51,8 @@ export async function updateBusinessStatus(
   lat: number,
   lon: number
 ) {
-  return apiFormPOST<{ mensaje: string }>(
-    `/admin/negocios/${id_negocio}?aprobado=${aprobado}&lat=${lat}&lon=${lon}`,
-    {}
+  return apiFormPUT<{ mensaje: string }>(
+    `/admin/negocios/${id_negocio}`,
+    { aprobado, lat, lon }
   );
 }
