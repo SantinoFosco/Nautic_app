@@ -1,8 +1,9 @@
 # app/api/test_routes.py
-from http.client import HTTPException
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from app.core.dependencies import get_db
+from app.core.database import Base
 from app.models.models import (
     Spot,
     Deporte,
@@ -178,3 +179,61 @@ def eliminar_spot(spot_id: int, db: Session = Depends(get_db)):
     return {"mensaje": f"Spot con ID {spot_id} eliminado correctamente"}
 
 
+# ------------------------------------------------------------
+# 🔹 Eliminar Negocio por ID
+# ------------------------------------------------------------
+@router.delete("/negocios/{negocio_id}")
+def eliminar_negocio(negocio_id: int, db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_negocio == negocio_id).first()
+    if not negocio:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+    
+    db.delete(negocio)
+    db.commit()
+    return {"mensaje": f"Negocio con ID {negocio_id} eliminado correctamente"}
+
+
+# ------------------------------------------------------------
+# 🔹 Vaciar tabla VariableMeteorologica
+# ------------------------------------------------------------
+@router.delete("/variables_meteorologicas")
+def eliminar_todas_variables_meteorologicas(db: Session = Depends(get_db)):
+    eliminadas = db.query(VariableMeteorologica).delete(synchronize_session=False)
+    db.commit()
+    return {
+        "mensaje": "Registros de 'variable_meteorologica' eliminados correctamente",
+        "cantidad": eliminadas,
+    }
+
+
+# ------------------------------------------------------------
+# 🔹 Vaciar tabla Spot
+# ------------------------------------------------------------
+@router.delete("/spots")
+def eliminar_todos_los_spots(db: Session = Depends(get_db)):
+    db.query(VariableMeteorologica).delete(synchronize_session=False)
+    db.query(DeporteSpot).delete(synchronize_session=False)
+    eliminados = db.query(Spot).delete(synchronize_session=False)
+    db.commit()
+    return {
+        "mensaje": "Registros de 'spot' eliminados correctamente",
+        "cantidad": eliminados,
+    }
+
+
+# ------------------------------------------------------------
+# 🔹 Eliminar todas las tablas de la base de datos
+# ------------------------------------------------------------
+@router.delete("/database/drop_all")
+def drop_all_tables(db: Session = Depends(get_db)):
+    try:
+        Base.metadata.drop_all(bind=db.get_bind())
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al eliminar todas las tablas: {exc}",
+        )
+
+    return {"mensaje": "Todas las tablas se eliminaron correctamente"}

@@ -59,7 +59,6 @@ def crear_deporte(
     # Buscar el último código existente (prefijo DPT)
     ultimo_deporte = db.query(Deporte).order_by(Deporte.id.desc()).first()
     siguiente_num = 1 if not ultimo_deporte else (ultimo_deporte.id + 1)
-    codigo = generar_codigo("SPT", siguiente_num)
 
     nuevo_deporte = Deporte(codigo=codigo, nombre=nombre, descripcion=descripcion, activo=True)
     db.add(nuevo_deporte)
@@ -208,7 +207,7 @@ def estadisticas(db: Session = Depends(get_db)):
     total_negocios = db.query(func.count(Negocio.id_negocio)).scalar()
     pendientes = db.query(Negocio).filter(Negocio.estado == EstadoNegocio.pendiente).count()
     activos = db.query(Negocio).filter(Negocio.estado == EstadoNegocio.activo).count()
-    usuarios = db.query(func.count(Usuario.id)).scalar()
+    usuarios = db.query(func.count(Usuario.id)).filter(Usuario.tipo_usuario == "owner").scalar()
 
     return {
         "negocios_totales": total_negocios,

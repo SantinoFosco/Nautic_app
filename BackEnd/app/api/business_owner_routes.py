@@ -2,7 +2,7 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models.models import Usuario, Negocio, EstadoNegocio, Deporte
+from app.models.models import Usuario, Negocio, EstadoNegocio, Deporte, NegocioDeporte
 from datetime import datetime
 
 router = APIRouter(prefix="/business_owner", tags=["Business Owner"])
@@ -57,9 +57,6 @@ def update_my_profile(
 def create_business(
     id_dueno: int,
     nombre_fantasia: str,
-    id_deporte1: int,
-    id_deporte2: int = None,
-    id_deporte3: int = None,
     rubro: str = None,
     sitio_web: str = None,
     telefono: str = None,
@@ -67,26 +64,22 @@ def create_business(
     direccion: str = None,
     horarios: str = None,
     descripcion: str = None,
+    deportes: list[str] = None,
     db: Session = Depends(get_db)
 ):
     dueno = db.query(Usuario).filter(Usuario.id == id_dueno).first()
     if not dueno:
         raise HTTPException(status_code=404, detail="Dueño no encontrado")
 
-    # 🔍 Validar que el primer deporte exista (obligatorio)
-    deporte_principal = db.query(Deporte).filter(Deporte.id == id_deporte1).first()
-    if not deporte_principal:
-        raise HTTPException(status_code=400, detail="El deporte principal (id_deporte1) no existe")
-
-    # Validar secundarios si fueron enviados
-    if id_deporte2:
-        if not db.query(Deporte).filter(Deporte.id == id_deporte2).first():
-            raise HTTPException(status_code=400, detail="El deporte secundario 2 no existe")
-    if id_deporte3:
-        if not db.query(Deporte).filter(Deporte.id == id_deporte3).first():
-            raise HTTPException(status_code=400, detail="El deporte secundario 3 no existe")
+    have_business = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
+    if have_business:
+        raise HTTPException(status_code=400, detail="Ya tienes un negocio")
+    
+    ultimo_negocio = db.query(Negocio).order_by(Negocio.id_negocio.desc()).first()
+    siguiente_num = 1 if not ultimo_negocio else (ultimo_negocio.id_negocio + 1)
 
     nuevo_negocio = Negocio(
+        id_negocio=siguiente_num,
         id_dueno=dueno.id,
         nombre_fantasia=nombre_fantasia,
         rubro=rubro,
@@ -98,9 +91,6 @@ def create_business(
         lon=Decimal("0.0"),
         horarios=horarios,
         descripcion=descripcion,
-        id_deporte1=id_deporte1,
-        id_deporte2=id_deporte2,
-        id_deporte3=id_deporte3,
         estado=EstadoNegocio.pendiente,
         fecha_creacion=datetime.utcnow()
     )
@@ -109,11 +99,19 @@ def create_business(
     db.commit()
     db.refresh(nuevo_negocio)
 
-    return {
-        "message": "Negocio creado correctamente",
-        "id_negocio": nuevo_negocio.id_negocio,
-        "deportes": [id_deporte1, id_deporte2, id_deporte3]
-    }
+    if deportes:
+        for nombre_deporte in deportes:
+            deporte = db.query(Deporte).filter(Deporte.nombre == nombre_deporte).first()
+            if not deporte:
+                continue
+            nuevo_negocio_deporte = NegocioDeporte(
+                id_negocio=nuevo_negocio.id_negocio,
+                id_deporte=deporte.id
+            )
+            db.add(nuevo_negocio_deporte)
+        db.commit()
+
+    return "Negocio creado correctamente"
 
 # ------------------------------------------------------
 # Listar negocios del dueño

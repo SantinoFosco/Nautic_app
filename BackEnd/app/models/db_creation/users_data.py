@@ -4,7 +4,7 @@ from app.models.models import Usuario
 # Lista de deportes a insertar
 users_data = [
     {"nombre": "User", "apellido": "user", "telefono": "1234567890", "email": "user@user.com", "hashed_password": "user", "tipo_usuario": "owner"},
-    {"nombre": "Admin", "apellido": "Admin", "telefono": "0123456789", "email": "admin@admin.com", "hashed_password": "admin", "tipo_usuario": "admin"}
+    {"nombre": "Admin", "apellido": "admin", "telefono": "0123456789", "email": "admin@admin.com", "hashed_password": "admin", "tipo_usuario": "admin"}
 ]
 
 

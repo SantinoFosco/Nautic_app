@@ -21,12 +21,12 @@ export default function BusinessRegister() {
   const [sportsOptions, setSportsOptions] = useState<{ id: number; nombre: string }[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 🔹 Traer los deportes desde el backend al montar el componente
+  // 🔹 Traer los deportes desde el backend
   useEffect(() => {
     const fetchSports = async () => {
       try {
         const res = await listSports();
-        setSportsOptions(res); // carga los deportes activos
+        setSportsOptions(res);
       } catch (err) {
         console.error("❌ Error al obtener los deportes:", err);
       }
@@ -35,72 +35,76 @@ export default function BusinessRegister() {
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSportsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const values = Array.from(e.target.selectedOptions, (opt) => Number(opt.value));
-    if (values.length > 3) {
-      alert("Solo podés seleccionar hasta 3 deportes.");
-      return;
-    }
-    setSelectedSports(values);
+  // ✅ Manejo de checkboxes (máx. 3 deportes)
+  const handleSportsChange = (value: number) => {
+    setSelectedSports((prev) => {
+      if (prev.includes(value)) {
+        return prev.filter((id) => id !== value);
+      } else {
+        if (prev.length >= 3) {
+          alert("Solo podés seleccionar hasta 3 deportes.");
+          return prev;
+        }
+        return [...prev, value];
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  const id_dueno = localStorage.getItem("ownerId");
-  if (!id_dueno) {
-    alert("No hay un dueño logueado. Iniciá sesión primero.");
-    navigate("/login");
-    return;
-  }
+    const id_dueno = localStorage.getItem("ownerId");
+    if (!id_dueno) {
+      alert("No hay un dueño logueado. Iniciá sesión primero.");
+      navigate("/login");
+      return;
+    }
 
-  if (selectedSports.length === 0) {
-    alert("Debes seleccionar al menos un deporte.");
-    setLoading(false);
-    return;
-  }
+    if (selectedSports.length === 0) {
+      alert("Debes seleccionar al menos un deporte.");
+      setLoading(false);
+      return;
+    }
 
-  // 🔹 Convertimos a número y eliminamos nulos correctamente
-  const [id_deporte1, id_deporte2, id_deporte3] = [
-    Number(selectedSports[0]),
-    selectedSports[1] ? Number(selectedSports[1]) : undefined,
-    selectedSports[2] ? Number(selectedSports[2]) : undefined,
-  ];
+    // ✅ Convertimos los IDs seleccionados (1 principal + opcionales)
+    const [id_deporte1, id_deporte2, id_deporte3] = [
+      Number(selectedSports[0]),
+      selectedSports[1] ? Number(selectedSports[1]) : undefined,
+      selectedSports[2] ? Number(selectedSports[2]) : undefined,
+    ];
 
-  try {
-    // ✅ Armamos payload sin "null" ni strings
-    const payload = {
-      id_dueno: String(id_dueno),
-      nombre_fantasia: formData.name,
-      rubro: formData.type,
-      sitio_web: formData.socials,
-      telefono: formData.phone,
-      email: formData.email,
-      direccion: formData.city,
-      horarios: formData.schedule,
-      descripcion: formData.description,
-      id_deporte1,
-      ...(id_deporte2 ? { id_deporte2 } : {}), // solo si existen
-      ...(id_deporte3 ? { id_deporte3 } : {}),
-    };
+    try {
+      // ✅ Armamos payload limpio
+      const payload = {
+        id_dueno: String(id_dueno),
+        nombre_fantasia: formData.name,
+        rubro: formData.type,
+        sitio_web: formData.socials,
+        telefono: formData.phone,
+        email: formData.email,
+        direccion: formData.city,
+        horarios: formData.schedule,
+        descripcion: formData.description,
+        id_deporte1,
+        ...(id_deporte2 ? { id_deporte2 } : {}),
+        ...(id_deporte3 ? { id_deporte3 } : {}),
+      };
 
-    const res = await createBusiness(payload);
-    console.log("✅ Negocio creado correctamente:", res);
-    alert("Negocio creado correctamente ✅");
-    navigate("/business-success");
-  } catch (err) {
-    console.error("❌ Error al crear negocio:", err);
-    alert("Error al crear el negocio. Verificá los datos.");
-  } finally {
-    setLoading(false);
-  }
-};
+      const res = await createBusiness(payload);
+      console.log("✅ Negocio creado correctamente:", res);
+      alert("Negocio creado correctamente ✅");
+      navigate("/business-success");
+    } catch (err) {
+      console.error("❌ Error al crear negocio:", err);
+      alert("Error al crear el negocio. Verificá los datos.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="grid w-full h-[calc(100vh-64px)] grid-cols-[40%_60%] overflow-hidden">
@@ -145,48 +149,33 @@ export default function BusinessRegister() {
               <option value="Otro">Otro</option>
             </select>
 
-<label className="mt-2 text-gray-700 font-semibold text-sm">
-  Seleccioná los deportes relacionados al negocio
-</label>
+            <label className="mt-2 text-gray-700 font-semibold text-sm">
+              Seleccioná los deportes relacionados al negocio
+            </label>
 
-<div className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-800 focus-within:ring-2 focus-within:ring-[#0b2849] transition">
-  <div className="grid grid-cols-2 gap-2">
-    {sportsOptions.map((sport) => (
-      <label
-        key={sport.id}
-        className={`flex items-center gap-2 cursor-pointer rounded-xl px-3 py-2 border transition ${
-          selectedSports.includes(sport.id)
-            ? "border-[#0b2849] bg-[#eaf2fb]"
-            : "border-gray-200 hover:border-[#0b2849]/40"
-        }`}
-      >
-        <input
-          type="checkbox"
-          value={sport.id}
-          checked={selectedSports.includes(sport.id)}
-          onChange={(e) => {
-            const value = Number(e.target.value);
-            let updated: number[];
-
-            if (selectedSports.includes(value)) {
-              updated = selectedSports.filter((id) => id !== value);
-            } else {
-              if (selectedSports.length >= 3) {
-                alert("Solo podés seleccionar hasta 3 deportes.");
-                return;
-              }
-              updated = [...selectedSports, value];
-            }
-
-            setSelectedSports(updated);
-          }}
-          className="accent-[#0b2849] w-4 h-4"
-        />
-        <span className="text-sm">{sport.nombre}</span>
-      </label>
-    ))}
-  </div>
-</div>
+            <div className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-800 focus-within:ring-2 focus-within:ring-[#0b2849] transition">
+              <div className="grid grid-cols-2 gap-2">
+                {sportsOptions.map((sport) => (
+                  <label
+                    key={sport.id}
+                    className={`flex items-center gap-2 cursor-pointer rounded-xl px-3 py-2 border transition ${
+                      selectedSports.includes(sport.id)
+                        ? "border-[#0b2849] bg-[#eaf2fb]"
+                        : "border-gray-200 hover:border-[#0b2849]/40"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      value={sport.id}
+                      checked={selectedSports.includes(sport.id)}
+                      onChange={() => handleSportsChange(sport.id)}
+                      className="accent-[#0b2849] w-4 h-4"
+                    />
+                    <span className="text-sm">{sport.nombre}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <input
               name="city"
@@ -203,6 +192,7 @@ export default function BusinessRegister() {
               onChange={handleChange}
               className="input validator py-2"
             />
+
             <input
               type="email"
               name="email"
@@ -211,6 +201,7 @@ export default function BusinessRegister() {
               onChange={handleChange}
               className="input validator py-2"
             />
+
             <input
               name="socials"
               placeholder="Redes sociales / web"
@@ -218,6 +209,7 @@ export default function BusinessRegister() {
               onChange={handleChange}
               className="input validator py-2"
             />
+
             <input
               name="schedule"
               placeholder="Horario"
