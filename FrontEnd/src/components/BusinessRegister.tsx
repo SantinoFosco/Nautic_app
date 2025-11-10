@@ -143,10 +143,9 @@ export default function BusinessRegister() {
               required
             >
               <option value="">Tipo de negocio</option>
-              <option value="Escuela de surf">Escuela de surf</option>
-              <option value="Escuela de kayak">Escuela de kayak</option>
-              <option value="Tienda náutica">Tienda náutica</option>
-              <option value="Otro">Otro</option>
+              <option value="Escuela de surf">Escuela</option>
+              <option value="Escuela de kayak">Tienda</option>
+              <option value="Tienda náutica">Alquiler</option>
             </select>
 
             <label className="mt-2 text-gray-700 font-semibold text-sm">

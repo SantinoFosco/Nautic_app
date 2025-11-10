@@ -43,17 +43,29 @@ export default function Navbar() {
         </ul>
       </div>
 
-      {/* DERECHA: Botón */}
-      <Link
-        to="/login"
-        className="
-          border border-white/80 text-white px-4 py-2 rounded-md
-          text-sm font-medium hover:bg-white hover:text-[#0D3B66]
-          transition-colors
-        "
-      >
-        ¿Tenés un negocio? Unite a nosotros
-      </Link>
+      {/* DERECHA: Botones de acciones */}
+      <div className="flex items-center gap-3">
+        <Link
+          to="/register"
+          className="
+            border border-white/80 text-white px-4 py-2 rounded-md
+            text-sm font-medium hover:bg-white hover:text-[#0D3B66]
+            transition-colors
+          "
+        >
+          Registrar negocio
+        </Link>
+        <Link
+          to="/login"
+          className="
+            border border-white/80 text-white px-4 py-2 rounded-md
+            text-sm font-medium hover:bg-white hover:text-[#0D3B66]
+            transition-colors
+          "
+        >
+          Iniciar sesión
+        </Link>
+      </div>
     </nav>
   );
 }

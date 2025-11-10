@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../components/AdminLayout";
-import { createSport } from "../api/admin";
+import { createSport, type SportVariablePayload } from "../api/admin";
 import { ArrowLeft } from "lucide-react";
 
-// Estado inicial para una variable
-const varTemplate = { umbral_min: 0, umbral_max: 0, peso: 0, operador: "between" };
+type VariableState = {
+  umbral_min: number;
+  umbral_max: number;
+  operador: "min" | "max" | "between";
+};
+
+const createVariableState = (): VariableState => ({
+  umbral_min: 0,
+  umbral_max: 0,
+  operador: "between",
+});
 
 export default function CreateSportPage() {
   const [nombre, setNombre] = useState("");
@@ -14,9 +23,9 @@ export default function CreateSportPage() {
   const navigate = useNavigate();
 
   // Estados para las 3 variables importantes
-  const [windSpeed, setWindSpeed] = useState(varTemplate);
-  const [waveHeight, setWaveHeight] = useState(varTemplate);
-  const [windGust, setWindGust] = useState(varTemplate);
+  const [windSpeed, setWindSpeed] = useState<VariableState>(() => createVariableState());
+  const [waveHeight, setWaveHeight] = useState<VariableState>(() => createVariableState());
+  const [windGust, setWindGust] = useState<VariableState>(() => createVariableState());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +33,7 @@ export default function CreateSportPage() {
 
     try {
       // Armamos el payload de 'variables' que el backend espera
-      const payloadDeVariables = [
+      const payloadDeVariables: SportVariablePayload[] = [
         { nombre_variable: "wind_speed", ...windSpeed },
         { nombre_variable: "waveHeight", ...waveHeight },
         { nombre_variable: "wind_gustValue", ...windGust },
@@ -136,12 +145,17 @@ export default function CreateSportPage() {
 }
 
 // === Componente Auxiliar para el Formulario ===
-function VariableInputGroup({ label, state, setState }) {
+type VariableInputGroupProps = {
+  label: string;
+  state: VariableState;
+  setState: Dispatch<SetStateAction<VariableState>>;
+};
+
+function VariableInputGroup({ label, state, setState }: VariableInputGroupProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setState((prev) => ({
       ...prev,
-      // Convierte a número si es umbral o peso
       [name]: name === "operador" ? value : Number(value),
     }));
   };
@@ -151,7 +165,7 @@ function VariableInputGroup({ label, state, setState }) {
       <label className="block text-base font-medium text-gray-800 mb-3">
         {label}
       </label>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
         {/* Operador */}
         <div>
           <label className="block text-xs text-gray-500 mb-1">Operador</label>
@@ -189,16 +203,6 @@ function VariableInputGroup({ label, state, setState }) {
           />
         </div>
         {/* Peso */}
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Peso</label>
-          <input
-            type="number"
-            name="peso"
-            value={state.peso}
-            onChange={handleChange}
-            className="biz-input"
-          />
-        </div>
       </div>
     </div>
   );

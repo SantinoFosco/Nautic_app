@@ -4,18 +4,15 @@ from decimal import Decimal
 
 # Lista de spots a insertar
 spots_data = [
-    {"nombre": "Islas del Delta", "tipo": "Isla", "lat": "-34.4455", "lon": "-58.5085"},
     {"nombre": "Mar del Plata", "tipo": "Playa", "lat": "-38.0055", "lon": "-57.5426"},
-    {"nombre": "Pipeline", "tipo": "Playa", "lat": "21.6643", "lon": "-158.0530"},  # Hawái, surf
-    {"nombre": "Chamonix", "tipo": "Montaña", "lat": "45.9237", "lon": "6.8694"},  # Francia, ski y alpinismo
-    {"nombre": "Bondi Beach", "tipo": "Playa", "lat": "-33.8908", "lon": "151.2743"},  # Australia, surf
-    {"nombre": "Whistler", "tipo": "Montaña", "lat": "50.1163", "lon": "-122.9574"},  # Canadá, ski y mountain bike
-    {"nombre": "Lake Placid", "tipo": "Lago", "lat": "44.2795", "lon": "-73.9799"},  # EE. UU., deportes de invierno y kayak
-    {"nombre": "Queenstown", "tipo": "Montaña", "lat": "-45.0312", "lon": "168.6626"},  # Nueva Zelanda, deportes extremos
-    {"nombre": "Teahupo'o", "tipo": "Playa", "lat": "-17.8333", "lon": "-149.2667"},  # Tahití, surf
-    {"nombre": "Interlaken", "tipo": "Montaña", "lat": "46.6863", "lon": "7.8632"},  # Suiza, parapente y senderismo
-    {"nombre": "Tarifa", "tipo": "Playa", "lat": "36.0139", "lon": "-5.6060"},  # España, kitesurf y windsurf
-    {"nombre": "Maui North Shore", "tipo": "Playa", "lat": "20.9084", "lon": "-156.4204"},  # Hawái, surf y windsurf
+    {"nombre": "Anse Source d'Argent", "tipo": "Playa", "lat": "-4.371675504663671", "lon": "55.827215038447946"},
+    {"nombre": "Champagne Beach", "tipo": "Playa", "lat": "-15.14373812608433", "lon": "167.12047384798723"},
+    {"nombre": "Bondi Beach", "tipo": "Playa", "lat": "-33.89151910396984", "lon": "151.27730217855867"},
+    {"nombre": "Playa Blanca", "tipo": "Playa", "lat": "28.85559870495888", "lon": "-13.839609538166144"},
+    {"nombre": "Paralia Navagio", "tipo": "Playa", "lat": "37.85968238319725", "lon": "20.624881060787857"},
+    {"nombre": "South Beach", "tipo": "Playa", "lat": "25.774548115347358", "lon": "-80.1298678456566"},
+    {"nombre": "Lago Nahuel Huapi", "tipo": "Lago", "lat": "-41.03004929637477", "lon": "-71.49125114645692"},
+    {"nombre": "Pragser Wildsee", "tipo": "Lago", "lat": "46.69701612661271", "lon": "12.084074523933168"},
 ]
 
 def generar_codigo(prefix, id_num):

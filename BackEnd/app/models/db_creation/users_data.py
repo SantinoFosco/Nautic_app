@@ -4,7 +4,11 @@ from app.models.models import Usuario
 # Lista de deportes a insertar
 users_data = [
     {"nombre": "User", "apellido": "user", "telefono": "1234567890", "email": "user@user.com", "hashed_password": "user", "tipo_usuario": "owner"},
-    {"nombre": "Admin", "apellido": "admin", "telefono": "0123456789", "email": "admin@admin.com", "hashed_password": "admin", "tipo_usuario": "admin"}
+    {"nombre": "Admin", "apellido": "admin", "telefono": "0123456789", "email": "admin@admin.com", "hashed_password": "admin", "tipo_usuario": "admin"},
+    {"nombre": "Laura", "apellido": "Lagos", "telefono": "1111111111", "email": "laura@example.com", "hashed_password": "laura123", "tipo_usuario": "owner"},
+    {"nombre": "Carlos", "apellido": "Cano", "telefono": "2222222222", "email": "carlos@example.com", "hashed_password": "carlos123", "tipo_usuario": "owner"},
+    {"nombre": "Marina", "apellido": "Mar", "telefono": "3333333333", "email": "marina@example.com", "hashed_password": "marina123", "tipo_usuario": "owner"},
+    {"nombre": "Diego", "apellido": "Delta", "telefono": "4444444444", "email": "diego@example.com", "hashed_password": "diego123", "tipo_usuario": "owner"},
 ]
 
 

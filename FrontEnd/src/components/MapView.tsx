@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
-import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Tooltip, Popup } from "react-leaflet";
 import {
   Thermometer,
   Wind,
@@ -53,9 +53,52 @@ type Spot = {
   descripcion?: string;
 };
 
+// 3. DEFINIR LOS ÍCONOS PERSONALIZADOS
+const iconSize: [number, number] = [32, 32];
+const iconAnchor: [number, number] = [16, 32]; // (centro-abajo)
+
+const surfIcon = L.icon({
+  iconUrl: iconSurf,
+  iconSize: iconSize,
+  iconAnchor: iconAnchor,
+});
+
+const kiteIcon = L.icon({
+  iconUrl: iconKite,
+  iconSize: iconSize,
+  iconAnchor: iconAnchor,
+});
+
+const kayakIcon = L.icon({
+  iconUrl: iconKayak,
+  iconSize: iconSize,
+  iconAnchor: iconAnchor,
+});
+
+// 👈 2. Definir el ícono de Tienda
+const tiendaIcon = L.icon({
+  iconUrl: iconTienda,
+  iconSize: iconSize,
+  iconAnchor: iconAnchor,
+});
+
+
+// 4. FUNCIÓN HELPER PARA DECIDIR EL ÍCONO
+function getIconForSpot(spot: Spot) {
+  // Usamos 'best_sport' que ya viene en tu lógica
+  const sportName = normalizeSportName(spot.best_sport);
+
+  if (sportName === "surf") return surfIcon;
+  if (sportName === "kite") return kiteIcon;
+  if (sportName === "kayak") return kayakIcon;
+
+  // Fallback por si 'best_sport' es nulo o no coincide
+  return surfIcon;
+}
+
 const MapContainerAny = MapContainer as unknown as ComponentType<any>;
 const TileLayerAny = TileLayer as unknown as ComponentType<any>;
-const CircleMarkerAny = CircleMarker as unknown as ComponentType<any>;
+const MarkerAny = Marker as unknown as ComponentType<any>;
 const TooltipAny = Tooltip as unknown as ComponentType<any>;
 const PopupAny = Popup as unknown as ComponentType<any>;
 
@@ -71,68 +114,75 @@ export default function MapView() {
 
   // === 1️⃣ Cargar spots y negocios ===
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const resSpots = await fetch("http://127.0.0.1:8000/spot/list?day=0");
-      const spotsData = await resSpots.json();
+    const fetchData = async () => {
+      try {
+        const resSpots = await fetch("http://127.0.0.1:8000/spot/list?day=0");
+        const spotsData = await resSpots.json();
 
-      const resBusiness = await fetch("http://127.0.0.1:8000/spot/business_list");
-      const businessData = await resBusiness.json();
+        const resBusiness = await fetch("http://127.0.0.1:8000/spot/business_list");
+        const businessData = await resBusiness.json();
 
-      // ✅ Adaptamos los negocios al nuevo backend con deportes [{nombre, es_principal}]
-      const businesses: Spot[] = businessData.map((b: any) => ({
-        id: `business-${b.lat}-${b.lon}-${b.name}`,
-        name: b.nombre_fantasia,
-        lat: b.lat,
-        lon: b.lon,
-        type: "business" as const,
-        rubro: b.rubro,
-        direccion: b.direccion,
-        telefono: b.telefono,
-        email: b.email,
-        sitio_web: b.sitio_web,
-        horarios: b.horarios,
-        descripcion: b.descripcion,
-        nombre_fantasia: b.nombre_fantasia,
-        // 👇 Convertimos los nombres de deportes a formato normalizado
-        sports: (b.deportes ?? [])
-          .map((d: any) => normalizeSportName(d.nombre))
-          .filter(Boolean),
-      }));
+        const normalizedSpots: Spot[] = spotsData.map((s: any) => ({
+          id: `spot-${s.name}-${s.lat}-${s.lon}`,
+          name: s.name,
+          lat: s.lat,
+          lon: s.lon,
+          type: "spot" as const,
+          best_sport: s.best_sport,
+          sports: Array.isArray(s.sports)
+            ? (s.sports.map((n: string) => normalizeSportName(n)).filter(Boolean) as Sport[])
+            : undefined,
+        }));
 
-      const normalizedSpots: Spot[] = spotsData.map((s: any) => ({
-        id: `spot-${s.name}-${s.lat}-${s.lon}`,
-        ...s,
-      }));
+        const businesses: Spot[] = businessData.map((b: any) => ({
+          id: `business-${b.nombre_fantasia}-${b.lat}-${b.lon}`,
+          name: b.nombre_fantasia,
+          lat: b.lat,
+          lon: b.lon,
+          type: "business" as const,
+          rubro: b.rubro,
+          direccion: b.direccion,
+          telefono: b.telefono,
+          email: b.email,
+          sitio_web: b.sitio_web,
+          horarios: b.horarios,
+          descripcion: b.descripcion,
+          nombre_fantasia: b.nombre_fantasia,
+          sports: (b.deportes ?? [])
+            .map((d: any) => normalizeSportName(d.nombre))
+            .filter(Boolean) as Sport[],
+        }));
 
-      setSpots([...normalizedSpots, ...businesses]);
-    } catch (err) {
-      console.error("Error al cargar spots o negocios:", err);
-    }
-  };
-  fetchData();
-}, []);
+        setSpots([...normalizedSpots, ...businesses]);
+      } catch (err) {
+        console.error("Error al cargar spots o negocios:", err);
+      }
+    };
+    fetchData();
+  }, []);
 
   // === 2️⃣ Filtro por deporte (para spots y negocios) ===
   const visibleSpots = useMemo(() => {
-  if (selectedSports.length === 0) return spots;
+    if (selectedSports.length === 0) return spots;
 
-  return spots.filter((s) => {
-    if (s.type === "spot") {
-      const best = normalizeSportName(s.best_sport);
-      return best ? selectedSports.includes(best) : false;
-    }
+    return spots.filter((s) => {
+      if (s.type === "spot") {
+        const best = normalizeSportName(s.best_sport);
+        return best ? selectedSports.includes(best) : false;
+      }
 
-    // type === "business"
-    const sportsNorm = (s.sports ?? []).filter(Boolean) as Sport[];
-    const matchesSports = sportsNorm.some((sp) => selectedSports.includes(sp));
+      // type === "business"
+      const sportsNorm = (s.sports ?? [])
+        .map((n) => normalizeSportName(n))
+        .filter(Boolean) as Sport[];
+      const matchesSports = sportsNorm.some((sp) => selectedSports.includes(sp));
 
-    const rubroNorm = normalizeSportName(s.rubro ?? null);
-    const matchesRubro = rubroNorm ? selectedSports.includes(rubroNorm) : false;
+      const rubroNorm = normalizeSportName(s.rubro ?? null);
+      const matchesRubro = rubroNorm ? selectedSports.includes(rubroNorm) : false;
 
-    return matchesSports || matchesRubro;
-  });
-}, [selectedSports, spots]);
+      return matchesSports || matchesRubro;
+    });
+  }, [selectedSports, spots]);
 
   const selectedSpot = visibleSpots.find((s) => s.id === selectedId);
 
@@ -245,26 +295,37 @@ export default function MapView() {
 
         {/* === MARCADORES === */}
         {visibleSpots.map((spot) => {
-          const d = data[spot.id];
-          const wind = d?.wind_speed_10m ?? 0;
-          const waves = d?.wave_height ?? 0;
-          const rain = d?.precipitation ?? 0;
-          const sport = pickSportForSpot(selectedSports, spot.sports || []);
-          const apt = calcAptitude(sport, wind, waves, rain);
-          const color = spot.type === "business" ? "#2563eb" : aptColor(apt);
+          
+          // Si es un NEGOCIO, usamos el ícono de tienda
+          if (spot.type === "business") {
+            return (
+              <MarkerAny
+                key={spot.id}
+                position={[spot.lat, spot.lon]}
+                icon={tiendaIcon}
+                eventHandlers={{ click: () => handleSpotClick(spot) }}
+              >
+                <TooltipAny permanent direction="bottom" offset={[0, 14]} className="spot-chip">
+                  {spot.name}
+                </TooltipAny>
+              </MarkerAny>
+            );
+          }
+
+          // Si es un SPOT DEPORTIVO, usamos el <Marker> de deporte
+          const icon = getIconForSpot(spot);
 
           return (
-            <CircleMarkerAny
+            <MarkerAny
               key={spot.id}
-              center={[spot.lat, spot.lon]}
-              radius={spot.type === "business" ? 8 : 6}
-              pathOptions={{ color, fillColor: color, fillOpacity: 0.9, weight: 2 }}
+              position={[spot.lat, spot.lon]}
+              icon={icon}
               eventHandlers={{ click: () => handleSpotClick(spot) }}
             >
               <TooltipAny permanent direction="bottom" offset={[0, 14]} className="spot-chip">
                 {spot.name}
               </TooltipAny>
-            </CircleMarkerAny>
+            </MarkerAny>
           );
         })}
 
@@ -399,35 +460,4 @@ function Info({ icon, label, value }: { icon: React.ReactNode; label: string; va
       <span className="text-[13px] font-medium text-[#0D3B66] break-words">{value}</span>
     </div>
   );
-}
-
-// === HELPERS ===
-type AptLabel = "excelente" | "bueno" | "malo";
-
-function calcAptitude(sport: Sport, wind: number, waves: number, rain: number): AptLabel {
-  if (sport === "surf") {
-    if (waves >= 1.2 && wind < 8 && rain < 2) return "excelente";
-    if (waves >= 0.7 && wind < 12 && rain < 4) return "bueno";
-    return "malo";
-  }
-  if (sport === "kite") {
-    if (wind >= 8 && wind <= 14 && rain < 2) return "excelente";
-    if (wind >= 6 && rain < 4) return "bueno";
-    return "malo";
-  }
-  // kayak
-  if (rain < 3 && wind < 10) return "excelente";
-  if (rain < 6) return "bueno";
-  return "malo";
-}
-
-function aptColor(label: AptLabel) {
-  return label === "excelente" ? "#16a34a" : label === "bueno" ? "#f59e0b" : "#dc2626";
-}
-
-function pickSportForSpot(selectedSports: string[], spotSports: Sport[]): Sport {
-  if (selectedSports.length === 1 && spotSports.includes(selectedSports[0] as Sport)) {
-    return selectedSports[0] as Sport;
-  }
-  return spotSports[0] ?? "surf";
 }

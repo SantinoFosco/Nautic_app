@@ -10,8 +10,6 @@ from app.models.models import (
     Negocio,
     EstadoNegocio, 
     Usuario,
-    VariableMeteorologica, 
-    DeporteSpot
 )
 import random
 
@@ -59,73 +57,62 @@ def crear_deporte(
     # Buscar el último código existente (prefijo DPT)
     ultimo_deporte = db.query(Deporte).order_by(Deporte.id.desc()).first()
     siguiente_num = 1 if not ultimo_deporte else (ultimo_deporte.id + 1)
+    codigo = generar_codigo("SPT", siguiente_num)
 
     nuevo_deporte = Deporte(codigo=codigo, nombre=nombre, descripcion=descripcion, activo=True)
     db.add(nuevo_deporte)
     db.commit()
     db.refresh(nuevo_deporte)
 
-    # Variables (umbral, peso, operador, etc.)
+    pesos_default = {
+        "wind_speed": 10,
+        "wind_gustValue": 8,
+        "waveHeight": 10,
+    }
+
+    # Variables principales con pesos automáticos
     if variables:
         for v in variables:
-            if(v.get("nombre_variable") == "wind_speed" and v.get("operador") == "min" or v.get("operador") == "max" or v.get("operador") == "between"):
+            nombre_variable = v.get("nombre_variable")
+            operador = v.get("operador")
+            if nombre_variable in pesos_default and operador in {"min", "max", "between"}:
                 nueva_var = DeporteVariable(
                     id_deporte=nuevo_deporte.id,
-                    nombre_variable="wind_speed",
+                    nombre_variable=nombre_variable,
                     umbral_min=v.get("umbral_min"),
                     umbral_max=v.get("umbral_max"),
-                    peso=v.get("peso"),
-                    operador=v.get("operador"),
+                    peso=pesos_default[nombre_variable],
+                    operador=operador,
                     estado="activo"
                 )
-            if(v.get("nombre_variable") == "wind_gustValue" and v.get("operador") == "min" or v.get("operador") == "max" or v.get("operador") == "between"):
-                nueva_var = DeporteVariable(
-                    id_deporte=nuevo_deporte.id,
-                    nombre_variable="wind_gustValue",
-                    umbral_min=v.get("umbral_min"),
-                    umbral_max=v.get("umbral_max"),
-                    peso=v.get("peso"),
-                    operador=v.get("operador"),
-                    estado="activo"
-                )
-            if(v.get("nombre_variable") == "waveHeight" and v.get("operador") == "min" or v.get("operador") == "max" or v.get("operador") == "between"):
-                nueva_var = DeporteVariable(
-                    id_deporte=nuevo_deporte.id,
-                    nombre_variable="waveHeight",
-                    umbral_min=v.get("umbral_min"),
-                    umbral_max=v.get("umbral_max"),
-                    peso=v.get("peso"),
-                    operador=v.get("operador"),
-                    estado="activo"
-                )
-            db.add(nueva_var)
+                db.add(nueva_var)
 
-        variables = [
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "uvIndex",                     "umbral_min": 0,   "umbral_max": 9,    "peso": 4,  "operador": "between"},
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "precipitation_probability",   "umbral_min": 0,   "umbral_max": 30,   "peso": 6,  "operador": "min"},
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "precipitation_qpfCuantity",   "umbral_min": 0,   "umbral_max": 3,    "peso": 6,  "operador": "min"},
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "cloudCover",                  "umbral_min": 0,   "umbral_max": 80,   "peso": 4,  "operador": "min"},
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "maxTemperature",              "umbral_min": 18,  "umbral_max": 35,   "peso": 5,  "operador": "between"},
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "minTemperature",              "umbral_min": 10,  "umbral_max": 30,   "peso": 5,  "operador": "between"},
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "feelsLikeMaxTemperature",     "umbral_min": 18,  "umbral_max": 38,   "peso": 5,  "operador": "between"},
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "feelsLikeMinTemperature",     "umbral_min": 12,  "umbral_max": 30,   "peso": 5,  "operador": "between"},
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "waterTemperature",            "umbral_min": 15,  "umbral_max": 30,   "peso": 6,  "operador": "between"},
-        {"id_deporte": nuevo_deporte.id, "nombre_variable": "wavePeriod",                  "umbral_min": 0,   "umbral_max": 8,    "peso": 2,  "operador": "between"}
-        ]
+    variables_secundarias = [
+        {"nombre_variable": "uvIndex",                     "umbral_min": 0,   "umbral_max": 9,    "peso": 4,  "operador": "between"},
+        {"nombre_variable": "precipitation_probability",   "umbral_min": 0,   "umbral_max": 30,   "peso": 6,  "operador": "min"},
+        {"nombre_variable": "precipitation_qpfCuantity",   "umbral_min": 0,   "umbral_max": 3,    "peso": 6,  "operador": "min"},
+        {"nombre_variable": "cloudCover",                  "umbral_min": 0,   "umbral_max": 80,   "peso": 4,  "operador": "min"},
+        {"nombre_variable": "maxTemperature",              "umbral_min": 18,  "umbral_max": 35,   "peso": 5,  "operador": "between"},
+        {"nombre_variable": "minTemperature",              "umbral_min": 10,  "umbral_max": 30,   "peso": 5,  "operador": "between"},
+        {"nombre_variable": "feelsLikeMaxTemperature",     "umbral_min": 18,  "umbral_max": 38,   "peso": 5,  "operador": "between"},
+        {"nombre_variable": "feelsLikeMinTemperature",     "umbral_min": 12,  "umbral_max": 30,   "peso": 5,  "operador": "between"},
+        {"nombre_variable": "waterTemperature",            "umbral_min": 15,  "umbral_max": 30,   "peso": 6,  "operador": "between"},
+        {"nombre_variable": "wavePeriod",                  "umbral_min": 0,   "umbral_max": 8,    "peso": 2,  "operador": "between"}
+    ]
 
-        for v in variables:
-            nueva_var = DeporteVariable(
-                    id_deporte=v.get("id_deporte"),
-                    nombre_variable=v.get("nombre_variable"),
-                    umbral_min=v.get("umbral_min"),
-                    umbral_max=v.get("umbral_max"),
-                    peso=v.get("peso"),
-                    operador=v.get("operador"),
-                    estado="activo"
-                )
-            db.add(nueva_var)
+    for v in variables_secundarias:
+        nueva_var = DeporteVariable(
+            id_deporte=nuevo_deporte.id,
+            nombre_variable=v["nombre_variable"],
+            umbral_min=v["umbral_min"],
+            umbral_max=v["umbral_max"],
+            peso=v["peso"],
+            operador=v["operador"],
+            estado="activo"
+        )
+        db.add(nueva_var)
 
-        db.commit()
+    db.commit()
 
     return {"mensaje": "Deporte creado correctamente", "deporte": nuevo_deporte}
 

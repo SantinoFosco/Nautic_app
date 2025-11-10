@@ -83,11 +83,10 @@ export type SportInfo = {
 };
 
 // 🔹 TIPO: Define el payload para las variables de un deporte
-type SportVariablePayload = {
+export type SportVariablePayload = {
   nombre_variable: "wind_speed" | "waveHeight" | "wind_gustValue";
   umbral_min: number;
   umbral_max: number;
-  peso: number;
   operador: "min" | "max" | "between";
 };
 
