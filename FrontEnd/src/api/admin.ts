@@ -56,6 +56,25 @@ export async function updateBusinessStatus(
   );
 }
 
+/**
+ * Activa o desactiva un negocio (Activo <-> Inactivo).
+ */
+export async function toggleBusinessStatus(id_negocio: number) {
+  return apiFormPUT<{ mensaje: string; nuevo_estado: string }>(
+    `/admin/negocios/${id_negocio}/toggle_status`,
+    {} // No necesita payload, solo el PUT
+  );
+}
+
+/**
+ * Elimina un negocio permanentemente.
+ */
+export async function deleteBusiness(id_negocio: number) {
+  return apiDELETE<{ mensaje: string }>(
+    `/admin/negocios/${id_negocio}`
+  );
+}
+
 // 🔹 TIPO: Define cómo es un deporte en la lista
 export type SportInfo = {
   id: number;

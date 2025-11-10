@@ -75,7 +75,7 @@ export default function CreateSportPage() {
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="biz-input" // 👈 Estilo reutilizado
+              className="biz-input" 
               placeholder="Ej: Surf"
               required
             />
@@ -87,7 +87,7 @@ export default function CreateSportPage() {
             <textarea
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              className="biz-textarea" // 👈 Estilo reutilizado
+              className="biz-textarea" 
               rows={3}
               placeholder="Una breve descripción del deporte"
             />
@@ -159,7 +159,7 @@ function VariableInputGroup({ label, state, setState }) {
             name="operador"
             value={state.operador}
             onChange={handleChange}
-            className="biz-input" // 👈 Estilo reutilizado
+            className="biz-input" 
           >
             <option value="between">Entre (between)</option>
             <option value="min">Mínimo (min)</option>

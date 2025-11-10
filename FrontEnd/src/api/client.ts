@@ -41,3 +41,17 @@ export async function apiFormPUT<T>(
 
   return res.json();
 }
+
+// ------------------------------------------------------------
+// 🔹 NUEVO: DELETE genérico
+// ------------------------------------------------------------
+export async function apiDELETE<T>(url: string): Promise<T> {
+  const res = await fetch(`${BASE_URL}${url}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error DELETE ${url}: ${res.status}`);
+  }
+  return res.json();
+}

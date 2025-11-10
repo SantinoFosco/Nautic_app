@@ -9,7 +9,9 @@ from app.models.models import (
     DeporteVariable, 
     Negocio,
     EstadoNegocio, 
-    Usuario
+    Usuario,
+    VariableMeteorologica, 
+    DeporteSpot
 )
 import random
 
@@ -163,6 +165,40 @@ def aprobar_negocio(negocio_id: int, aprobado: bool = Query(...), lat: float = Q
         db.delete(negocio)
     db.commit()
     return {"mensaje": f"Negocio {'aprobado y activado' if aprobado else 'rechazado y eliminado'} correctamente"}
+
+
+@router.put("/negocios/{negocio_id}/toggle_status")
+def toggle_business_status(negocio_id: int, db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_negocio == negocio_id).first()
+    
+    if not negocio:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    # Solo permitimos cambiar entre activo e inactivo
+    if negocio.estado == EstadoNegocio.activo:
+        negocio.estado = EstadoNegocio.inactivo
+        new_status = "inactivo"
+    elif negocio.estado == EstadoNegocio.inactivo:
+        negocio.estado = EstadoNegocio.activo
+        new_status = "activo"
+    else:
+        # No se puede activar/desactivar un negocio pendiente desde aqui
+        raise HTTPException(status_code=400, detail=f"No se puede cambiar el estado de un negocio {negocio.estado.value}")
+
+    db.commit()
+    db.refresh(negocio)
+    return {"mensaje": f"Negocio {negocio.nombre_fantasia} ahora está {new_status}", "nuevo_estado": new_status}
+
+
+@router.delete("/negocios/{negocio_id}")
+def eliminar_negocio(negocio_id: int, db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_negocio == negocio_id).first()
+    if not negocio:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+    
+    db.delete(negocio)
+    db.commit()
+    return {"mensaje": f"Negocio con ID {negocio_id} eliminado correctamente"}
 
 # ------------------------------------------------------------
 # 🔹 Métricas generales

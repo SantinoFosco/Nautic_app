@@ -178,15 +178,3 @@ def eliminar_spot(spot_id: int, db: Session = Depends(get_db)):
     return {"mensaje": f"Spot con ID {spot_id} eliminado correctamente"}
 
 
-# ------------------------------------------------------------
-# 🔹 Eliminar Negocio por ID
-# ------------------------------------------------------------
-@router.delete("/negocios/{negocio_id}")
-def eliminar_negocio(negocio_id: int, db: Session = Depends(get_db)):
-    negocio = db.query(Negocio).filter(Negocio.id_negocio == negocio_id).first()
-    if not negocio:
-        raise HTTPException(status_code=404, detail="Negocio no encontrado")
-    
-    db.delete(negocio)
-    db.commit()
-    return {"mensaje": f"Negocio con ID {negocio_id} eliminado correctamente"}

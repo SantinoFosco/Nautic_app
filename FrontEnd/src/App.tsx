@@ -16,7 +16,7 @@ import SpotsPage from "./pages/SpotsPage";
 import PendingBusinessesPage from "./pages/PendingBusinessesPage";
 import SportsManagementPage from "./pages/SportsManagementPage";
 import CreateSportPage from "./pages/CreateSportPage";
-
+import AdminAllBusinessesPage from "./pages/AdminAllBusinessesPage"; // 👈 Importar
 
 function Layout() {
   const location = useLocation();
@@ -63,6 +63,7 @@ function Layout() {
           <Route path="/spots" element={<SpotsPage />} />
           <Route path="/negocios" element={<BusinessesPage />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/admin/todos-negocios" element={<AdminAllBusinessesPage />} />
         </Routes>
       </main>
     </div>
