@@ -222,8 +222,11 @@ class NegocioDeporte(Base):
 
     id_negocio = Column(Integer, ForeignKey("negocio.id_negocio"), nullable=False)
     id_deporte = Column(Integer, ForeignKey("deporte.id"), nullable=False)
-    tipo_servicio = Column(String(20))
+    es_principal = Column(Boolean, default=False, nullable=False)
 
     __table_args__ = (
         PrimaryKeyConstraint("id_negocio", "id_deporte"),
-   )
+    )
+
+    negocio = relationship("Negocio", back_populates="deportes_rel")
+    deporte = relationship("Deporte", back_populates="negocios_rel")

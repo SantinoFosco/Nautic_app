@@ -64,44 +64,61 @@ export default function MapView() {
 
   // === 1️⃣ Cargar spots y negocios ===
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const resSpots = await fetch("http://127.0.0.1:8000/spot/list?day=0");
-        const spotsData = await resSpots.json();
+  const fetchData = async () => {
+    try {
+      const resSpots = await fetch("http://127.0.0.1:8000/spot/list?day=0");
+      const spotsData = await resSpots.json();
 
-        const resBusiness = await fetch("http://127.0.0.1:8000/spot/business_list");
-        const businessData = await resBusiness.json();
+      const resBusiness = await fetch("http://127.0.0.1:8000/spot/business_list");
+      const businessData = await resBusiness.json();
 
-        setSpots([...spotsData, ...businessData]);
-      } catch (err) {
-        console.error("Error al cargar spots o negocios:", err);
-      }
-    };
-    fetchData();
-  }, []);
+      // ✅ Adaptamos los negocios al nuevo backend con deportes [{nombre, es_principal}]
+      const businesses = businessData.map((b: any) => ({
+        name: b.nombre_fantasia,
+        lat: b.lat,
+        lon: b.lon,
+        type: "business" as const,
+        rubro: b.rubro,
+        direccion: b.direccion,
+        telefono: b.telefono,
+        email: b.email,
+        sitio_web: b.sitio_web,
+        horarios: b.horarios,
+        descripcion: b.descripcion,
+        // 👇 Convertimos los nombres de deportes a formato normalizado
+        sports: (b.deportes ?? [])
+          .map((d: any) => normalizeSportName(d.nombre))
+          .filter(Boolean),
+      }));
+
+      setSpots([...spotsData, ...businesses]);
+    } catch (err) {
+      console.error("Error al cargar spots o negocios:", err);
+    }
+  };
+  fetchData();
+}, []);
 
   // === 2️⃣ Filtro por deporte (para spots y negocios) ===
   const visibleSpots = useMemo(() => {
-    if (selectedSports.length === 0) return spots;
+  if (selectedSports.length === 0) return spots;
 
-    return spots.filter((s) => {
-      if (s.type === "spot") {
-        const best = normalizeSportName(s.best_sport);
-        return best ? selectedSports.includes(best) : false;
-      }
+  return spots.filter((s) => {
+    if (s.type === "spot") {
+      const best = normalizeSportName(s.best_sport);
+      return best ? selectedSports.includes(best) : false;
+    }
 
-      // type === "business"
-      const sportsNorm = (s.sports ?? [])
-        .map((n) => normalizeSportName(n))
-        .filter(Boolean) as Sport[];
-      const matchesSports = sportsNorm.some((sp) => selectedSports.includes(sp));
+    // type === "business"
+    const sportsNorm = (s.sports ?? []).filter(Boolean) as Sport[];
+    const matchesSports = sportsNorm.some((sp) => selectedSports.includes(sp));
 
-      const rubroNorm = normalizeSportName(s.rubro ?? null);
-      const matchesRubro = rubroNorm ? selectedSports.includes(rubroNorm) : false;
+    const rubroNorm = normalizeSportName(s.rubro ?? null);
+    const matchesRubro = rubroNorm ? selectedSports.includes(rubroNorm) : false;
 
-      return matchesSports || matchesRubro;
-    });
-  }, [selectedSports, spots]);
+    return matchesSports || matchesRubro;
+  });
+}, [selectedSports, spots]);
 
   const selectedSpot = visibleSpots.find((s) => s.name === selected);
 

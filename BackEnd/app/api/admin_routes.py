@@ -89,7 +89,6 @@ def crear_deporte(
             if(v.get("nombre_variable") == "waveHeight" and v.get("operador") == "min" or v.get("operador") == "max" or v.get("operador") == "between"):
                 nueva_var = DeporteVariable(
                     id_deporte=nuevo_deporte.id,
-                    .
                     nombre_variable="waveHeight",
                     umbral_min=v.get("umbral_min"),
                     umbral_max=v.get("umbral_max"),

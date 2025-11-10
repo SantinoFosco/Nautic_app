@@ -22,7 +22,7 @@ export async function loginOwner(payload: { email: string; password: string }) {
   );
 }
 
-// ✅ Interfaz tipada para crear negocio
+// ✅ Interfaz tipada para crear negocio (actualizada)
 export interface CreateBusinessPayload {
   id_dueno: string;
   nombre_fantasia: string;
@@ -33,20 +33,23 @@ export interface CreateBusinessPayload {
   direccion?: string;
   horarios?: string;
   descripcion?: string;
-  id_deporte1: number;          // 👈 deporte principal (obligatorio)
-  id_deporte2?: number | null;  // 👈 opcional
-  id_deporte3?: number | null;  // 👈 opcional
+
+  // 👇 Nuevo manejo de deportes
+  id_deporte1: number;           // principal (obligatorio)
+  id_deporte2?: number | null;   // secundario 1 (opcional)
+  id_deporte3?: number | null;   // secundario 2 (opcional)
 }
 
-// 🟩 Crear negocio (usa /business_owner/new_business)
+// 🟩 Crear negocio
 export async function createBusiness(payload: CreateBusinessPayload) {
-  return apiFormPOST<{ message: string; id_negocio: number }>(
+  // ✅ sin cambios en endpoint, sigue usando /business_owner/new_business
+  return apiFormPOST<{ message: string; id_negocio: number; deportes_asociados: number[] }>(
     "/business_owner/new_business",
     payload
   );
 }
 
-// 🟩 Listar negocios del dueño (usa /business_owner/my_business)
+// 🟩 Listar negocios del dueño
 export async function listMyBusinesses(id_dueno: string) {
   return apiGET<
     {
@@ -60,19 +63,20 @@ export async function listMyBusinesses(id_dueno: string) {
       lon: number | null;
       horarios: string;
       descripcion: string;
-      activo: boolean;
+      estado: string;
+      deportes: { nombre: string; es_principal: boolean }[];
     }[]
   >(`/business_owner/my_business?id_dueno=${id_dueno}`);
 }
 
-// 🟦 Obtener lista de deportes (usa /deporte/list)
+// 🟦 Obtener lista de deportes
 export async function listSports() {
   return apiGET<{ id: number; nombre: string; codigo: string; descripcion: string }[]>(
     "/deporte/list"
   );
 }
 
-// 🟩 Obtener información general de negocios (ej: para el mapa o panel)
+// 🟩 Obtener información general de negocios
 export type BusinessInfo = {
   id: number;
   nombre_fantasia: string;
