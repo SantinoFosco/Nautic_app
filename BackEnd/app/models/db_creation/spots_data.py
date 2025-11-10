@@ -6,7 +6,6 @@ from decimal import Decimal
 spots_data = [
     {"nombre": "Mar del Plata", "tipo": "Playa", "lat": "-38.0055", "lon": "-57.5426"},
     {"nombre": "Anse Source d'Argent", "tipo": "Playa", "lat": "-4.371675504663671", "lon": "55.827215038447946"},
-    {"nombre": "Champagne Beach", "tipo": "Playa", "lat": "-15.14373812608433", "lon": "167.12047384798723"},
     {"nombre": "Bondi Beach", "tipo": "Playa", "lat": "-33.89151910396984", "lon": "151.27730217855867"},
     {"nombre": "Playa Blanca", "tipo": "Playa", "lat": "28.85559870495888", "lon": "-13.839609538166144"},
     {"nombre": "Paralia Navagio", "tipo": "Playa", "lat": "37.85968238319725", "lon": "20.624881060787857"},
