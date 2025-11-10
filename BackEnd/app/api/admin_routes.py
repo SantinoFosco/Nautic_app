@@ -171,7 +171,7 @@ def estadisticas(db: Session = Depends(get_db)):
     total_negocios = db.query(func.count(Negocio.id_negocio)).scalar()
     pendientes = db.query(Negocio).filter(Negocio.estado == EstadoNegocio.pendiente).count()
     activos = db.query(Negocio).filter(Negocio.estado == EstadoNegocio.activo).count()
-    usuarios = db.query(func.count(Usuario.id)).scalar()
+    usuarios = db.query(func.count(Usuario.id)).filter(Usuario.tipo_usuario == "owner").scalar()
 
     return {
         "negocios_totales": total_negocios,

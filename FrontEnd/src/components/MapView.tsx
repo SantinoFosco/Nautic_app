@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup } from "react-leaflet";
 import {
   Thermometer,
@@ -27,6 +27,7 @@ function normalizeSportName(name?: string | null): Sport | null {
 }
 
 type Spot = {
+  id: string;
   name: string;
   lat: number;
   lon: number;
@@ -45,18 +46,17 @@ type Spot = {
   descripcion?: string;
 };
 
-type WeatherData = {
-  temperature_2m?: number;
-  wind_speed_10m?: number;
-  precipitation?: number;
-  wave_height?: number;
-};
+const MapContainerAny = MapContainer as unknown as ComponentType<any>;
+const TileLayerAny = TileLayer as unknown as ComponentType<any>;
+const CircleMarkerAny = CircleMarker as unknown as ComponentType<any>;
+const TooltipAny = Tooltip as unknown as ComponentType<any>;
+const PopupAny = Popup as unknown as ComponentType<any>;
 
 // === COMPONENTE PRINCIPAL ===
 export default function MapView() {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [data, setData] = useState<Record<string, any>>({});
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [day, setDay] = useState(0);
   const [loadingWeather, setLoadingWeather] = useState(false);
@@ -73,7 +73,8 @@ export default function MapView() {
       const businessData = await resBusiness.json();
 
       // ✅ Adaptamos los negocios al nuevo backend con deportes [{nombre, es_principal}]
-      const businesses = businessData.map((b: any) => ({
+      const businesses: Spot[] = businessData.map((b: any) => ({
+        id: `business-${b.lat}-${b.lon}-${b.name}`,
         name: b.nombre_fantasia,
         lat: b.lat,
         lon: b.lon,
@@ -85,13 +86,19 @@ export default function MapView() {
         sitio_web: b.sitio_web,
         horarios: b.horarios,
         descripcion: b.descripcion,
+        nombre_fantasia: b.nombre_fantasia,
         // 👇 Convertimos los nombres de deportes a formato normalizado
         sports: (b.deportes ?? [])
           .map((d: any) => normalizeSportName(d.nombre))
           .filter(Boolean),
       }));
 
-      setSpots([...spotsData, ...businesses]);
+      const normalizedSpots: Spot[] = spotsData.map((s: any) => ({
+        id: `spot-${s.name}-${s.lat}-${s.lon}`,
+        ...s,
+      }));
+
+      setSpots([...normalizedSpots, ...businesses]);
     } catch (err) {
       console.error("Error al cargar spots o negocios:", err);
     }
@@ -120,7 +127,7 @@ export default function MapView() {
   });
 }, [selectedSports, spots]);
 
-  const selectedSpot = visibleSpots.find((s) => s.name === selected);
+  const selectedSpot = visibleSpots.find((s) => s.id === selectedId);
 
   // === 3️⃣ Funciones auxiliares ===
   const toggleSport = (sport: string) => {
@@ -132,33 +139,33 @@ export default function MapView() {
 
   // === 4️⃣ Click en marcador ===
   const handleSpotClick = async (spot: Spot) => {
-    setSelected(spot.name);
+    setSelectedId(spot.id);
 
     if (spot.type === "business") {
       try {
         const url = `http://127.0.0.1:8000/spot/business_details?lat=${spot.lat}&lon=${spot.lon}`;
         const res = await fetch(url);
         const details = await res.json();
-        setData((prev) => ({ ...prev, [spot.name]: details || {} }));
+        setData((prev) => ({ ...prev, [spot.id]: details || {} }));
       } catch (err) {
         console.error("Error al traer detalles del negocio:", err);
-        setData((prev) => ({ ...prev, [spot.name]: {} }));
+        setData((prev) => ({ ...prev, [spot.id]: {} }));
       }
       return;
     }
 
     // Si es spot deportivo: clima
-    if (data[spot.name]) return;
+    if (data[spot.id]) return;
 
     setLoadingWeather(true);
     try {
       const url = `http://127.0.0.1:8000/spot/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
       const res = await fetch(url);
       const json = await res.json();
-      setData((prev) => ({ ...prev, [spot.name]: json }));
+      setData((prev) => ({ ...prev, [spot.id]: json }));
     } catch (err) {
       console.error("Error al cargar clima", err);
-      setData((prev) => ({ ...prev, [spot.name]: {} }));
+      setData((prev) => ({ ...prev, [spot.id]: {} }));
     } finally {
       setLoadingWeather(false);
     }
@@ -218,20 +225,20 @@ export default function MapView() {
       </div>
 
       {/* === MAPA === */}
-      <MapContainer
+      <MapContainerAny
         center={[-37.8, -58.0]}
         zoom={7}
         className="h-full w-full z-0"
         style={{ minHeight: "calc(100vh - 180px)" }}
       >
-        <TileLayer
+        <TileLayerAny
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; OpenStreetMap contributors'
         />
 
         {/* === MARCADORES === */}
         {visibleSpots.map((spot) => {
-          const d = data[spot.name];
+          const d = data[spot.id];
           const wind = d?.wind_speed_10m ?? 0;
           const waves = d?.wave_height ?? 0;
           const rain = d?.precipitation ?? 0;
@@ -240,29 +247,29 @@ export default function MapView() {
           const color = spot.type === "business" ? "#2563eb" : aptColor(apt);
 
           return (
-            <CircleMarker
-              key={spot.name}
+            <CircleMarkerAny
+              key={spot.id}
               center={[spot.lat, spot.lon]}
               radius={spot.type === "business" ? 8 : 6}
               pathOptions={{ color, fillColor: color, fillOpacity: 0.9, weight: 2 }}
               eventHandlers={{ click: () => handleSpotClick(spot) }}
             >
-              <Tooltip permanent direction="bottom" offset={[0, 14]} className="spot-chip">
+              <TooltipAny permanent direction="bottom" offset={[0, 14]} className="spot-chip">
                 {spot.name}
-              </Tooltip>
-            </CircleMarker>
+              </TooltipAny>
+            </CircleMarkerAny>
           );
         })}
 
         {/* === POPUP === */}
         {selectedSpot && (
-          <Popup
+          <PopupAny
             position={[selectedSpot.lat, selectedSpot.lon]}
             offset={[0, -10]}
             autoPan
             keepInView
             closeButton
-            eventHandlers={{ remove: () => setSelected(null) }}
+            eventHandlers={{ remove: () => setSelectedId(null) }}
           >
             <div className="w-[260px] space-y-2">
               <h3 className="font-bold text-[#0D3B66] text-lg text-center">
@@ -271,7 +278,7 @@ export default function MapView() {
 
               {selectedSpot.type === "business" ? (
                 (() => {
-                  const biz = { ...selectedSpot, ...(data[selectedSpot.name] || {}) };
+                  const biz = { ...selectedSpot, ...(data[selectedSpot.id] || {}) };
                   return (
                     <>
                       <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-3">
@@ -307,17 +314,17 @@ export default function MapView() {
                     </>
                   );
                 })()
-              ) : loadingWeather && !data[selectedSpot.name] ? (
+              ) : loadingWeather && !data[selectedSpot.id] ? (
                 <div className="flex justify-center py-4">
                   <span className="loading loading-spinner loading-md text-[#0D3B66]"></span>
                 </div>
-              ) : data[selectedSpot.name] ? (
+              ) : data[selectedSpot.id] ? (
                 <>
                   <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
-                    <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.name].temperature_2m ?? 0}°C`} />
-                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.name].wind_speed_10m ?? 0} m/s`} />
-                    <Info icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />} label="Lluvia prom." value={`${data[selectedSpot.name].precipitation ?? 0} mm`} />
-                    <Info icon={<Waves className="w-4 h-4 text-[#0D3B66]" />} label="Olas prom." value={`${data[selectedSpot.name].wave_height ?? 0} m`} />
+                    <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.id].temperature_2m ?? 0}°C`} />
+                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.id].wind_speed_10m ?? 0} m/s`} />
+                    <Info icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />} label="Lluvia prom." value={`${data[selectedSpot.id].precipitation ?? 0} mm`} />
+                    <Info icon={<Waves className="w-4 h-4 text-[#0D3B66]" />} label="Olas prom." value={`${data[selectedSpot.id].wave_height ?? 0} m`} />
                   </div>
 
                   <button
@@ -331,9 +338,9 @@ export default function MapView() {
                 <p className="text-gray-400 text-sm">Sin datos disponibles</p>
               )}
             </div>
-          </Popup>
+          </PopupAny>
         )}
-      </MapContainer>
+      </MapContainerAny>
 
       {/* === FAB Ayuda === */}
       <div className="fixed z-[1200] right-5 bottom-5">

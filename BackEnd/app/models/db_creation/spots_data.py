@@ -5,13 +5,17 @@ from decimal import Decimal
 # Lista de spots a insertar
 spots_data = [
     {"nombre": "Islas del Delta", "tipo": "Isla", "lat": "-34.4455", "lon": "-58.5085"},
-    {"nombre": "San Clemente del Tuyú", "tipo": "Playa", "lat": "-36.3567", "lon": "-56.7233"},
-    {"nombre": "San Bernardo", "tipo": "Playa", "lat": "-36.7", "lon": "-56.7"},
-    {"nombre": "Villa Gesell", "tipo": "Playa", "lat": "-37.2645", "lon": "-56.9729"},
     {"nombre": "Mar del Plata", "tipo": "Playa", "lat": "-38.0055", "lon": "-57.5426"},
-    {"nombre": "Necochea", "tipo": "Playa", "lat": "-38.5545", "lon": "-58.739"},
-    {"nombre": "Claromecó", "tipo": "Playa", "lat": "-38.8667", "lon": "-60.0833"},
-    {"nombre": "Monte Hermoso", "tipo": "Playa", "lat": "-38.9833", "lon": "-61.2833"},
+    {"nombre": "Pipeline", "tipo": "Playa", "lat": "21.6643", "lon": "-158.0530"},  # Hawái, surf
+    {"nombre": "Chamonix", "tipo": "Montaña", "lat": "45.9237", "lon": "6.8694"},  # Francia, ski y alpinismo
+    {"nombre": "Bondi Beach", "tipo": "Playa", "lat": "-33.8908", "lon": "151.2743"},  # Australia, surf
+    {"nombre": "Whistler", "tipo": "Montaña", "lat": "50.1163", "lon": "-122.9574"},  # Canadá, ski y mountain bike
+    {"nombre": "Lake Placid", "tipo": "Lago", "lat": "44.2795", "lon": "-73.9799"},  # EE. UU., deportes de invierno y kayak
+    {"nombre": "Queenstown", "tipo": "Montaña", "lat": "-45.0312", "lon": "168.6626"},  # Nueva Zelanda, deportes extremos
+    {"nombre": "Teahupo'o", "tipo": "Playa", "lat": "-17.8333", "lon": "-149.2667"},  # Tahití, surf
+    {"nombre": "Interlaken", "tipo": "Montaña", "lat": "46.6863", "lon": "7.8632"},  # Suiza, parapente y senderismo
+    {"nombre": "Tarifa", "tipo": "Playa", "lat": "36.0139", "lon": "-5.6060"},  # España, kitesurf y windsurf
+    {"nombre": "Maui North Shore", "tipo": "Playa", "lat": "20.9084", "lon": "-156.4204"},  # Hawái, surf y windsurf
 ]
 
 def generar_codigo(prefix, id_num):

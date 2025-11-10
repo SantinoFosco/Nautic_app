@@ -33,6 +33,7 @@ class Deporte(Base):
     # Relaciones
     spots = relationship("DeporteSpot", back_populates="deporte")
     variables = relationship("DeporteVariable", back_populates="deporte")
+    negocios_rel = relationship("NegocioDeporte", back_populates="deporte")
 
 
 # ------------------------------------------------------
@@ -178,7 +179,7 @@ class EstadoNegocio(str, enum.Enum):
 class Negocio(Base):
     __tablename__ = "negocio"
 
-    id_negocio = Column(Integer, Sequence("negocio_id_seq"), primary_key=True, autoincrement=True)
+    id_negocio = Column(Integer, Sequence("negocio_id_seq"), primary_key=True)
     id_dueno = Column(Integer, ForeignKey("usuario.id"), nullable=False)
     nombre_fantasia = Column(String(100), nullable=False)
     rubro = Column(String(50))
@@ -189,13 +190,6 @@ class Negocio(Base):
     lat = Column(Numeric(10, 6), nullable=False)
     lon = Column(Numeric(10, 6), nullable=False)
     horarios = Column(String(255))
-    
-    # 👇 Deporte principal obligatorio
-    id_deporte1 = Column(Integer, ForeignKey("deporte.id"), nullable=False)
-    # 👇 Deportes secundarios opcionales
-    id_deporte2 = Column(Integer, ForeignKey("deporte.id"), nullable=True)
-    id_deporte3 = Column(Integer, ForeignKey("deporte.id"), nullable=True)
-
     estado = Column(
         Enum(
             EstadoNegocio,
@@ -211,9 +205,8 @@ class Negocio(Base):
 
     # Relaciones
     usuario = relationship("Usuario", back_populates="negocios")
-    deporte1 = relationship("Deporte", foreign_keys=[id_deporte1])
-    deporte2 = relationship("Deporte", foreign_keys=[id_deporte2])
-    deporte3 = relationship("Deporte", foreign_keys=[id_deporte3])
+    deportes_rel = relationship("NegocioDeporte", back_populates="negocio")
+
 # ------------------------------------------------------
 # Tabla intermedia Negocio_Deporte
 # ------------------------------------------------------
@@ -222,7 +215,6 @@ class NegocioDeporte(Base):
 
     id_negocio = Column(Integer, ForeignKey("negocio.id_negocio"), nullable=False)
     id_deporte = Column(Integer, ForeignKey("deporte.id"), nullable=False)
-    es_principal = Column(Boolean, default=False, nullable=False)
 
     __table_args__ = (
         PrimaryKeyConstraint("id_negocio", "id_deporte"),
