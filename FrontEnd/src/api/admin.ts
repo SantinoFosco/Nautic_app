@@ -39,7 +39,6 @@ export async function getActiveSpots() {
       tipo: string;
       lat: number;
       lon: number;
-      // Tu backend no devuelve 'activo', así que lo quitamos del tipo
     }[]
   >("/admin/spots/activos");
 }
@@ -54,5 +53,70 @@ export async function updateBusinessStatus(
   return apiFormPUT<{ mensaje: string }>(
     `/admin/negocios/${id_negocio}`,
     { aprobado, lat, lon }
+  );
+}
+
+// 🔹 TIPO: Define cómo es un deporte en la lista
+export type SportInfo = {
+  id: number;
+  nombre: string;
+  activo: boolean;
+};
+
+// 🔹 TIPO: Define el payload para las variables de un deporte
+type SportVariablePayload = {
+  nombre_variable: "wind_speed" | "waveHeight" | "wind_gustValue";
+  umbral_min: number;
+  umbral_max: number;
+  peso: number;
+  operador: "min" | "max" | "between";
+};
+
+// 🔹 TIPO: Define el payload para crear un deporte
+type CreateSportPayload = {
+  nombre: string;
+  descripcion: string;
+  variables: SportVariablePayload[];
+};
+
+/**
+ * Obtiene la lista de todos los deportes.
+ */
+export async function listSports() {
+  // El backend devuelve tuplas [id, nombre, activo]
+  // Las transformamos a objetos para que sean más fáciles de usar
+  const sportsList = await apiGET<[number, string, boolean][]>("/admin/deportes");
+  return sportsList.map(
+    ([id, nombre, activo]): SportInfo => ({ id, nombre, activo })
+  );
+}
+
+/**
+ * Crea un nuevo deporte.
+ */
+export async function createSport(payload: CreateSportPayload) {
+  /* El backend espera un POST con query params.
+    El payload { nombre: "Test", variables: [...] } 
+    se debe enviar como:
+    ?nombre=Test&variables=[{...},{...}]
+  */
+  const data = {
+    nombre: payload.nombre,
+    descripcion: payload.descripcion,
+    // Convertimos el array de variables a un string JSON
+    variables: JSON.stringify(payload.variables),
+  };
+
+  return apiFormPOST<{ mensaje: string }>("/admin/deportes", data);
+}
+
+/**
+ * Activa o desactiva un deporte existente.
+ */
+export async function toggleSportStatus(id_deporte: number) {
+  // Usa apiFormPUT según tu client.ts
+  return apiFormPUT<{ mensaje: string }>(
+    `/admin/deportes/${id_deporte}/toggle`,
+    {}
   );
 }

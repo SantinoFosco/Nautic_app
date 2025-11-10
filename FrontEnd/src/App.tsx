@@ -14,6 +14,8 @@ import FAQ from "./components/FAQ";
 import BusinessesPage from "./pages/BusinessesPage";
 import SpotsPage from "./pages/SpotsPage";
 import PendingBusinessesPage from "./pages/PendingBusinessesPage";
+import SportsManagementPage from "./pages/SportsManagementPage";
+import CreateSportPage from "./pages/CreateSportPage";
 
 
 function Layout() {
@@ -54,6 +56,8 @@ function Layout() {
           <Route path="/business-edit" element={<BusinessEdit />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/admin/negocios-pendientes" element={<PendingBusinessesPage />} />
+          <Route path="/admin/deportes" element={<SportsManagementPage />} />
+          <Route path="/admin/crear-deporte" element={<CreateSportPage />} />
           <Route path="/business-empty" element={<BusinessEmptyState />} />
           <Route path="/business" element={<BusinessPanel />} />
           <Route path="/spots" element={<SpotsPage />} />

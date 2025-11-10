@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Timer, ListChecks, Users } from "lucide-react";
+import { LayoutDashboard, Timer, ListChecks, Users, Waves, MapPin } from "lucide-react";
 
 // Componente hijo para el Sidebar
 function SidebarItem({
@@ -54,8 +54,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           />
           <SidebarItem
             label="Deportes"
-            icon={<Users className="w-4 h-4" />}
+            icon={<Waves className="w-4 h-4" />}
             path="/admin/deportes"
+          />
+          <SidebarItem
+            label="Spots"
+            icon={<MapPin className="w-4 h-4" />}
+            path="/admin/spots"
           />
         </nav>
       </aside>
