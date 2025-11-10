@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  CircleMarker, 
+  Marker, 
+  Tooltip,
+  Popup,
+} from "react-leaflet";
 import {
   Thermometer,
   Wind,
@@ -13,6 +20,13 @@ import {
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { useNavigate } from "react-router-dom";
+
+// 2. IMPORTAR 'L' E IMÁGENES
+import L from "leaflet";
+import iconSurf from "../assets/IconoBlueSurf.png";
+import iconKite from "../assets/IconoBlueKite.png";
+import iconKayak from "../assets/IconoBlueKayak.png";
+import iconTienda from "../assets/IconoSkyBlueTienda.png";
 
 // === TIPOS ===
 type Sport = "surf" | "kite" | "kayak";
@@ -51,6 +65,49 @@ type WeatherData = {
   precipitation?: number;
   wave_height?: number;
 };
+
+// 3. DEFINIR LOS ÍCONOS PERSONALIZADOS
+const iconSize: [number, number] = [32, 32];
+const iconAnchor: [number, number] = [16, 32]; // (centro-abajo)
+
+const surfIcon = L.icon({
+  iconUrl: iconSurf,
+  iconSize: iconSize,
+  iconAnchor: iconAnchor,
+});
+
+const kiteIcon = L.icon({
+  iconUrl: iconKite,
+  iconSize: iconSize,
+  iconAnchor: iconAnchor,
+});
+
+const kayakIcon = L.icon({
+  iconUrl: iconKayak,
+  iconSize: iconSize,
+  iconAnchor: iconAnchor,
+});
+
+// 👈 2. Definir el ícono de Tienda
+const tiendaIcon = L.icon({
+  iconUrl: iconTienda,
+  iconSize: iconSize,
+  iconAnchor: iconAnchor,
+});
+
+
+// 4. FUNCIÓN HELPER PARA DECIDIR EL ÍCONO
+function getIconForSpot(spot: Spot) {
+  // Usamos 'best_sport' que ya viene en tu lógica
+  const sportName = normalizeSportName(spot.best_sport);
+
+  if (sportName === "surf") return surfIcon;
+  if (sportName === "kite") return kiteIcon;
+  if (sportName === "kayak") return kayakIcon;
+
+  // Fallback por si 'best_sport' es nulo o no coincide
+  return surfIcon;
+}
 
 // === COMPONENTE PRINCIPAL ===
 export default function MapView() {
@@ -185,7 +242,7 @@ export default function MapView() {
             {[...Array(5)].map((_, i) => {
               const date = new Date();
               date.setDate(date.getDate() + i);
-              const formatted = date.toLocaleDateString("es-AR", {
+              const formatted = date.toLocaleString("es-AR", {
                 weekday: "short",
                 day: "2-digit",
                 month: "2-digit",
@@ -214,26 +271,37 @@ export default function MapView() {
 
         {/* === MARCADORES === */}
         {visibleSpots.map((spot) => {
-          const d = data[spot.name];
-          const wind = d?.wind_speed_10m ?? 0;
-          const waves = d?.wave_height ?? 0;
-          const rain = d?.precipitation ?? 0;
-          const sport = pickSportForSpot(selectedSports, spot.sports || []);
-          const apt = calcAptitude(sport, wind, waves, rain);
-          const color = spot.type === "business" ? "#2563eb" : aptColor(apt);
+          
+          // Si es un NEGOCIO, usamos el ícono de tienda
+          if (spot.type === "business") {
+            return (
+              <Marker
+                key={spot.name}
+                position={[spot.lat, spot.lon]}
+                icon={tiendaIcon}
+                eventHandlers={{ click: () => handleSpotClick(spot) }}
+              >
+                <Tooltip permanent direction="bottom" offset={[0, 14]} className="spot-chip">
+                  {spot.name}
+                </Tooltip>
+              </Marker>
+            );
+          }
+
+          // Si es un SPOT DEPORTIVO, usamos el <Marker> de deporte
+          const icon = getIconForSpot(spot);
 
           return (
-            <CircleMarker
+            <Marker
               key={spot.name}
-              center={[spot.lat, spot.lon]}
-              radius={spot.type === "business" ? 8 : 6}
-              pathOptions={{ color, fillColor: color, fillOpacity: 0.9, weight: 2 }}
+              position={[spot.lat, spot.lon]}
+              icon={icon}
               eventHandlers={{ click: () => handleSpotClick(spot) }}
             >
               <Tooltip permanent direction="bottom" offset={[0, 14]} className="spot-chip">
                 {spot.name}
               </Tooltip>
-            </CircleMarker>
+            </Marker>
           );
         })}
 
