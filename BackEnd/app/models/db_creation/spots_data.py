@@ -24,8 +24,14 @@ def seed_spots():
         print("🌊 Insertando spots en la base de datos...")
 
         for i, spot_data in enumerate(spots_data, start=1):
+            codigo = generar_codigo("SPT", i)
+            existing = db.query(Spot).filter(Spot.codigo == codigo).first()
+            if existing:
+                print(f"ℹ️  Spot '{spot_data['nombre']}' ya existe, se omite.")
+                continue
+
             nuevo_spot = Spot(
-                codigo=generar_codigo("SPT", i),
+                codigo=codigo,
                 nombre=spot_data["nombre"],
                 tipo=spot_data["tipo"],
                 lat=Decimal(spot_data["lat"]),

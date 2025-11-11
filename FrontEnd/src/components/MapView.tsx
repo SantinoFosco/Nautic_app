@@ -82,6 +82,10 @@ const tiendaIcon = L.icon({
   iconAnchor: iconAnchor,
 });
 
+const extractBusinessSports = (raw: any): Sport[] =>
+  (Array.isArray(raw) ? raw : [])
+    .map((value) => normalizeSportName(typeof value === "string" ? value : value?.nombre))
+    .filter(Boolean) as Sport[];
 
 // 4. FUNCIÓN HELPER PARA DECIDIR EL ÍCONO
 function getIconForSpot(spot: Spot) {
@@ -127,7 +131,7 @@ export default function MapView() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const resSpots = await fetch("http://localhost:8000/spot/list?day=0");
+        const resSpots = await fetch(`http://localhost:8000/spot/list?day=${day}`);
         const spotsData = await resSpots.json();
 
         const resBusiness = await fetch("http://localhost:8000/spot/business_list");
@@ -145,6 +149,17 @@ export default function MapView() {
             : undefined,
         }));
 
+const extractBusinessSports = (raw: any): Sport[] =>
+  (Array.isArray(raw) ? raw : [])
+    .map((d: any) => {
+      const candidate =
+        d?.nombre ??
+        d?.codigo ??
+        d?.deporte?.nombre ??
+        (typeof d === "string" ? d : null);
+      return normalizeSportName(candidate);
+    })
+    .filter(Boolean) as Sport[];
         const businesses: Spot[] = businessData.map((b: any) => ({
           id: `business-${b.nombre_fantasia}-${b.lat}-${b.lon}`,
           name: b.nombre_fantasia,
@@ -159,18 +174,18 @@ export default function MapView() {
           horarios: b.horarios,
           descripcion: b.descripcion,
           nombre_fantasia: b.nombre_fantasia,
-          sports: (b.deportes ?? [])
-            .map((d: any) => normalizeSportName(d.nombre))
-            .filter(Boolean) as Sport[],
+          sports: extractBusinessSports(b.deportes),
         }));
 
         setSpots([...normalizedSpots, ...businesses]);
+        setData({});
+        setSelectedId(null);
       } catch (err) {
         console.error("Error al cargar spots o negocios:", err);
       }
     };
     fetchData();
-  }, []);
+  }, [day]);
 
 
   // === 2️⃣ Filtro por deporte (para spots y negocios) ===
@@ -190,9 +205,9 @@ export default function MapView() {
     }
 
     // type === "business"
-    const sportsNorm = (s.sports ?? [])
-      .map((n) => normalizeSportName(n))
-      .filter(Boolean) as Sport[];
+    const baseSports = s.sports ?? [];
+    const detailedSports = extractBusinessSports(data[s.id]?.sports);
+    const sportsNorm = [...baseSports, ...detailedSports];
     const matchesSports = sportsNorm.some((sp) => selectedSports.includes(sp));
 
     const rubroNorm = normalizeSportName(s.rubro ?? null);
@@ -223,10 +238,27 @@ useEffect(() => {
 
     if (spot.type === "business") {
       try {
-        const url = `http://localhost:8000/spot/business_details?lat=${spot.lat}&lon=${spot.lon}`;
+        const url = `http://localhost:8000/spot/business_details?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
         const res = await fetch(url);
         const details = await res.json();
-        setData((prev) => ({ ...prev, [spot.id]: details || {} }));
+        const normalized = {
+          ...details,
+          sports: extractBusinessSports(details?.sports),
+        };
+        setData((prev) => ({ ...prev, [spot.id]: normalized || {} }));
+
+        setSpots((prev) =>
+          prev.map((s) =>
+            s.id === spot.id
+              ? {
+                  ...s,
+                  sports: Array.from(
+                    new Set([...(s.sports ?? []), ...normalized.sports])
+                  ),
+                }
+              : s
+          )
+        );
       } catch (err) {
         console.error("Error al traer detalles del negocio:", err);
         setData((prev) => ({ ...prev, [spot.id]: {} }));
@@ -485,7 +517,7 @@ useEffect(() => {
                 <>
                   <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
                     <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.id].temperature_2m ?? 0}°C`} />
-                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.id].wind_speed_10m ?? 0} m/s`} />
+                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.id].wind_speed_10m ?? 0} km/h`} />
                     <Info icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />} label="Lluvia prom." value={`${data[selectedSpot.id].precipitation ?? 0} mm`} />
                     <Info icon={<Waves className="w-4 h-4 text-[#0D3B66]" />} label="Olas prom." value={`${data[selectedSpot.id].wave_height ?? 0} m`} />
                   </div>

@@ -34,6 +34,7 @@ async def get_spots(day: int = Query(...), db: Session = Depends(get_db)):
                 and_(
                     DeporteSpot.id_spot == spot.id,
                     DeporteSpot.fecha == target_date,
+                    Deporte.activo == True,
                 )
             )
             .order_by(Deporte.nombre.asc())
@@ -59,22 +60,37 @@ async def get_spots(day: int = Query(...), db: Session = Depends(get_db)):
 @router.get("/business_list")
 async def get_business_spots(db: Session = Depends(get_db)):
     """Devuelve todos los negocios activos con sus coordenadas y deportes asociados"""
-    business_db = db.query(Negocio).filter(Negocio.estado == EstadoNegocio.activo).all()
+    negocios = (
+        db.query(Negocio)
+        .filter(Negocio.estado == EstadoNegocio.activo)
+        .all()
+    )
 
     business_list = []
+    for negocio in negocios:
+        lat = float(negocio.lat) if negocio.lat is not None else None
+        lon = float(negocio.lon) if negocio.lon is not None else None
 
-    for b in business_db:
-        # Convertir coordenadas (lat, lon) desde Numeric a float
-        lat = float(b.lat) if b.lat is not None else None
-        lon = float(b.lon) if b.lon is not None else None
+        deportes_records = (
+            db.query(Deporte)
+            .join(NegocioDeporte, NegocioDeporte.id_deporte == Deporte.id)
+            .filter(NegocioDeporte.id_negocio == negocio.id_negocio)
+            .order_by(Deporte.nombre.asc())
+            .all()
+        )
 
-        business_list.append({
-            "name": b.nombre_fantasia,
-            "lat": lat,
-            "lon": lon,
-            "type": "business",
-            "nombre_fantasia": b.nombre_fantasia,
-        })
+        deportes = [deporte.nombre for deporte in deportes_records]
+
+        business_list.append(
+            {
+                "name": negocio.nombre_fantasia,
+                "lat": lat,
+                "lon": lon,
+                "type": "business",
+                "nombre_fantasia": negocio.nombre_fantasia,
+                "deportes": deportes,
+            }
+        )
 
     return business_list
 
@@ -246,6 +262,7 @@ async def get_sportspoints(
             and_(
                 DeporteSpot.id_spot == spot.id,
                 DeporteSpot.fecha == target_date,
+                Deporte.activo == True,
             )
         )
         .order_by(Deporte.nombre.asc())

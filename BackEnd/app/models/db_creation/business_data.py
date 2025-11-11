@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from app.core.database import SessionLocal
-from app.models.models import Negocio, Usuario, EstadoNegocio
+from app.models.models import Negocio, Usuario, EstadoNegocio, NegocioDeporte
 
 businesses_data = [
     {
@@ -46,6 +46,12 @@ businesses_data = [
     },
 ]
 
+negocio_deportes = [
+    {"id_negocio": 1, "id_deporte": 2},
+    {"id_negocio": 2, "id_deporte": 3},
+    {"id_negocio": 3, "id_deporte": 1},
+]
+
 def seed_businesses():
     db = SessionLocal()
     try:
@@ -55,6 +61,20 @@ def seed_businesses():
             dueno = db.query(Usuario).filter(Usuario.email == negocio_data["email_dueno"]).first()
             if not dueno:
                 print(f"⚠️  No se encontró usuario con email {negocio_data['email_dueno']}, se omite negocio.")
+                continue
+
+            existing = (
+                db.query(Negocio)
+                .filter(
+                    Negocio.id_dueno == dueno.id,
+                    Negocio.nombre_fantasia == negocio_data["nombre_fantasia"],
+                )
+                .first()
+            )
+            if existing:
+                print(
+                    f"ℹ️  El negocio '{negocio_data['nombre_fantasia']}' ya existe para {negocio_data['email_dueno']}, se omite."
+                )
                 continue
 
             nuevo_negocio = Negocio(
@@ -73,6 +93,14 @@ def seed_businesses():
             db.add(nuevo_negocio)
 
         db.commit()
+
+        for negocio_deporte in negocio_deportes:
+            nuevo_negocio_deporte = NegocioDeporte(
+                id_negocio=negocio_deporte["id_negocio"],
+                id_deporte=negocio_deporte["id_deporte"],
+            )
+            db.add(nuevo_negocio_deporte)
+
         print("✅ Negocios insertados correctamente.")
 
     except Exception as e:

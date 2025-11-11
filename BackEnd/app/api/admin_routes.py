@@ -1,36 +1,81 @@
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import func
 from app.core.database import get_db
 from app.models.models import (
-    Spot, 
-    Deporte, 
-    DeporteVariable, 
+    Spot,
+    Deporte,
+    DeporteVariable,
     Negocio,
-    EstadoNegocio, 
+    EstadoNegocio,
     Usuario,
 )
 import random
+from app.services.WeatherLogic import insert_forecast_for_spot
+from app.services.SportsWeighting import ponderar_todos_los_deportes
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 # ------------------------------------------------------------
 # 🔹 Alta y baja de Spots
 # ------------------------------------------------------------
+def _run_spot_ingestion(spot_id: int):
+    from app.core.database import SessionLocal
+
+    session = SessionLocal()
+    try:
+        spot = session.query(Spot).filter(Spot.id == spot_id).one_or_none()
+        if not spot:
+            print(f"[SPOT INGESTION] Spot {spot_id} no encontrado")
+            return
+
+        count = insert_forecast_for_spot(session, spot)
+        session.commit()
+        print(f"[SPOT INGESTION] Spot {spot_id} → {count} registros meteorológicos.")
+
+        ponderar_todos_los_deportes(session)
+    except Exception as exc:
+        session.rollback()
+        print(f"[SPOT INGESTION] Error procesando spot {spot_id}: {exc}")
+    finally:
+        session.close()
+
+
 @router.post("/spots")
-def crear_spot(nombre: str, tipo: str, lat: float, lon: float, db: Session = Depends(get_db)):
+def crear_spot(
+    nombre: str,
+    tipo: str,
+    lat: float,
+    lon: float,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     codigo = f"SPOT-{random.randint(1000,9999)}"
     nuevo_spot = Spot(codigo=codigo, nombre=nombre, tipo=tipo, lat=lat, lon=lon, activo=True)
     db.add(nuevo_spot)
     db.commit()
     db.refresh(nuevo_spot)
+
+    background_tasks.add_task(_run_spot_ingestion, nuevo_spot.id)
+
     return {"mensaje": "Spot creado con éxito", "spot": nuevo_spot}
 
 @router.get("/spots")
 def listar_spots(db: Session = Depends(get_db)):
     spots = db.query(Spot).all()
-    return [(spot.codigo, spot.nombre, spot.tipo, spot.lat, spot.lon, spot.activo) for spot in spots]
+    return [
+        {
+            "id": spot.id,
+            "codigo": spot.codigo,
+            "nombre": spot.nombre,
+            "tipo": spot.tipo,
+            "lat": float(spot.lat),
+            "lon": float(spot.lon),
+            "activo": spot.activo,
+        }
+        for spot in spots
+    ]
 
 @router.put("/spots/{spot_id}/toggle")
 def cambiar_estado_spot(spot_id: int, db: Session = Depends(get_db)):

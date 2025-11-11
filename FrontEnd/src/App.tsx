@@ -16,6 +16,8 @@ import SpotsPage from "./pages/SpotsPage";
 import PendingBusinessesPage from "./pages/PendingBusinessesPage";
 import SportsManagementPage from "./pages/SportsManagementPage";
 import CreateSportPage from "./pages/CreateSportPage";
+import SpotsManagementPage from "./pages/SpotsManagementPage";
+import CreateSpotPage from "./pages/CreateSpotPage";
 import AdminAllBusinessesPage from "./pages/AdminAllBusinessesPage"; // 👈 Importar
 
 function Layout() {
@@ -58,6 +60,8 @@ function Layout() {
           <Route path="/admin/negocios-pendientes" element={<PendingBusinessesPage />} />
           <Route path="/admin/deportes" element={<SportsManagementPage />} />
           <Route path="/admin/crear-deporte" element={<CreateSportPage />} />
+          <Route path="/admin/spots" element={<SpotsManagementPage />} />
+          <Route path="/admin/crear-spot" element={<CreateSpotPage />} />
           <Route path="/business-empty" element={<BusinessEmptyState />} />
           <Route path="/business" element={<BusinessPanel />} />
           <Route path="/spots" element={<SpotsPage />} />

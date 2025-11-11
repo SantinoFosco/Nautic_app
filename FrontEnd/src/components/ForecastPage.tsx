@@ -25,7 +25,7 @@ type WeatherDay = {
 export default function ForecastPage() {
   const { name = "" } = useParams();
   const [spots, setSpots] = useState<Spot[]>([]);
-  const [day, setDay] = useState(0);
+  const [day] = useState(0);
   const [data, setData] = useState<WeatherDay | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,11 +82,11 @@ export default function ForecastPage() {
         // Normalizar payload: admite { sport, score } o { deporte, ponderacion }
         const raw = Array.isArray(json?.scores) ? json.scores : json;
         const list: sportsScore[] = raw
-          .map((r: any) => ({
+          .map((r: Record<string, unknown>) => ({
             sport: String(r.sport ?? r.deporte ?? "").toLowerCase(),
             score: Number(r.score ?? r.ponderacion ?? 0),
           }))
-          .filter((r) => r.sport && Number.isFinite(r.score));
+          .filter((item: sportsScore) => item.sport && Number.isFinite(item.score));
 
         const find = (...names: string[]) => {
           const s = list.find((x) => names.includes(x.sport));
@@ -151,18 +151,24 @@ export default function ForecastPage() {
           </p>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <SummaryCard
-              title="Puntuación Kayak"
-          value={kayakScore?.score ?? 0}
-            />
-            <SummaryCard
-              title="Puntuación Surf"
-          value={surfScore?.score ?? 0}
-            />
-            <SummaryCard
-              title="Puntuación Kite"
-          value={kiteScore?.score ?? 0}
-            />
+            {kayakScore && kayakScore.score !== 0 && (
+              <SummaryCard
+                title="Puntuación Kayak"
+                value={kayakScore.score}
+              />
+            )}
+            {surfScore && surfScore.score !== 0 && (
+              <SummaryCard
+                title="Puntuación Surf"
+                value={surfScore.score}
+              />
+            )}
+            {kiteScore && kiteScore.score !== 0 && (
+              <SummaryCard
+                title="Puntuación Kite"
+                value={kiteScore.score}
+              />
+            )}
           </div>
         </div>
       </div>

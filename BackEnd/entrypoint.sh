@@ -29,10 +29,11 @@ sequence = [
     ("app.models.db_creation.create_db",              None),  # al importar ya hace create_all y loguea
     ("app.models.db_creation.provider_data",          "seed_providers"),
     ("app.models.db_creation.sports_data",            "seed_sports"),
-    ("app.models.db_creation.tipoVariable_data",      "seed_tipo_variable_meteorologica"),
     ("app.models.db_creation.spots_data",             "seed_spots"),
     ("app.models.db_creation.users_data",             "seed_users"),
     ("app.models.db_creation.deporteVariable_data",   "seed_deporte_variable"),
+    ("app.models.db_creation.tipoVariable_data",      "seed_tipo_variable_meteorologica"),
+    ("app.models.db_creation.business_data",          "seed_businesses"),
 ]
 
 for mod_name, func in sequence:

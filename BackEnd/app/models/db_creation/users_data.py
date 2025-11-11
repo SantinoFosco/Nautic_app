@@ -17,7 +17,12 @@ def seed_users():
     try:
         print("👤 Insertando usuarios en la base de datos...")
 
-        for i, user_data in enumerate(users_data, start=1):
+        for user_data in users_data:
+            existing = db.query(Usuario).filter(Usuario.email == user_data["email"]).first()
+            if existing:
+                print(f"ℹ️  Usuario {user_data['email']} ya existe, se omite.")
+                continue
+
             nuevo_usuario = Usuario(
                 nombre=user_data["nombre"],
                 apellido=user_data["apellido"],
