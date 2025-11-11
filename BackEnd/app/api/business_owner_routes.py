@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import Usuario, Negocio, EstadoNegocio, Deporte, NegocioDeporte
 from datetime import datetime
+from app.services.auth_session import get_current_user
 
 router = APIRouter(prefix="/business_owner", tags=["Business Owner"])
 
@@ -11,8 +12,7 @@ router = APIRouter(prefix="/business_owner", tags=["Business Owner"])
 # Ver perfil del dueño
 # ------------------------------------------------------
 @router.get("/profile")
-def get_my_profile(id_dueno: int, db: Session = Depends(get_db)):
-    user = db.query(Usuario).filter(Usuario.id == id_dueno).first()
+def get_my_profile(user: Usuario = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
@@ -117,36 +117,30 @@ def create_business(
 # Listar negocios del dueño
 # ------------------------------------------------------
 @router.get("/my_business")
-def list_my_business(id_dueno: int, db: Session = Depends(get_db)):
-    negocio = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
+def my_business(user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_dueno == user.id).first()
     if not negocio:
-        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+        return {"hasBusiness": False}
 
-    if negocio.estado == EstadoNegocio.pendiente:
-        raise HTTPException(status_code=403, detail="Negocio pendiente de aprobación")
-
-    deportes = []
-    for rel in negocio.deportes_rel or []:
-        deportes.append(
-            {
-                "id_deporte": rel.id_deporte,
-                "nombre": rel.deporte.nombre if rel.deporte else None,
-            }
-        )
+    deportes = [
+        {"id_deporte": rel.id_deporte, "nombre": rel.deporte.nombre if rel.deporte else None}
+        for rel in (negocio.deportes_rel or [])
+    ]
 
     return {
+        "hasBusiness": True,
         "nombre_fantasia": negocio.nombre_fantasia,
         "rubro": negocio.rubro,
         "sitio_web": negocio.sitio_web,
         "telefono": negocio.telefono,
         "email": negocio.email,
-        "sitio_web": negocio.sitio_web,
         "direccion": negocio.direccion,
         "lat": float(negocio.lat) if negocio.lat else None,
         "lon": float(negocio.lon) if negocio.lon else None,
         "horarios": negocio.horarios,
         "descripcion": negocio.descripcion,
         "deportes": deportes,
+        "estado": negocio.estado,
     }
 
 # ------------------------------------------------------
@@ -154,7 +148,8 @@ def list_my_business(id_dueno: int, db: Session = Depends(get_db)):
 # ------------------------------------------------------
 @router.put("/update_business")
 def update_business(
-    id_dueno: int,
+    user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
     nombre_fantasia: str = None,
     rubro: str = None,
     sitio_web: str = None,
@@ -165,9 +160,8 @@ def update_business(
     id_deporte1: int = None,
     id_deporte2: int = None,
     id_deporte3: int = None,
-    db: Session = Depends(get_db)
 ):
-    negocio = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
+    negocio = db.query(Negocio).filter(Negocio.id_dueno == user.id).first()
     if not negocio:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 
@@ -201,8 +195,8 @@ def update_business(
 # Activar negocio
 # ------------------------------------------------------
 @router.put("/activate_business")
-def activate_business(id_dueno: int, db: Session = Depends(get_db)):
-    negocio = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
+def activate_business(user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_dueno == user.id).first()
     if not negocio:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 
@@ -214,8 +208,8 @@ def activate_business(id_dueno: int, db: Session = Depends(get_db)):
 # Desactivar negocio
 # ------------------------------------------------------
 @router.put("/deactivate_business")
-def deactivate_business(id_dueno: int, db: Session = Depends(get_db)):
-    negocio = db.query(Negocio).filter(Negocio.id_dueno == id_dueno).first()
+def deactivate_business(user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    negocio = db.query(Negocio).filter(Negocio.id_dueno == user.id).first()
     if not negocio:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 

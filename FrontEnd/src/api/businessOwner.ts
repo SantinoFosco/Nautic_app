@@ -1,4 +1,4 @@
-import { apiFormPOST, apiGET } from "./client";
+import { apiFormPOST, apiGET, apiFormPUT } from "./client";
 
 // 🟩 Registrar dueño (usa /user/register)
 export async function registerOwner(payload: {
@@ -54,25 +54,54 @@ export async function createBusiness(payload: CreateBusinessPayload) {
   );
 }
 
-// 🟩 Listar negocios del dueño
-export async function listMyBusinesses(id_dueno: string) {
-  return apiGET<
-    {
-      nombre_fantasia: string;
-      rubro: string;
-      sitio_web: string;
-      telefono: string;
-      email: string;
-      direccion: string;
-      lat: number | null;
-      lon: number | null;
-      horarios: string;
-      descripcion: string;
-      estado: string;
-      deportes: { nombre: string; es_principal: boolean }[];
-    }[]
-  >(`/business_owner/my_business?id_dueno=${id_dueno}`);
+
+export type MyBusiness = {
+  nombre_fantasia: string;
+  rubro?: string | null;
+  sitio_web?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  direccion?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+  horarios?: string | null;
+  descripcion?: string | null;
+  estado: "activo" | "inactivo" | "pendiente";
+  deportes: { id_deporte: number; nombre: string | null }[];
+};
+
+export type OwnerProfile = {
+  id_dueno: number;
+  nombre: string;
+  apellido: string;
+  telefono: string | null;
+  email: string;
+  fecha_creacion: string | null;
+};
+
+// 🟩 Obtener perfil del dueño
+export async function getOwnerProfile(id_dueno: string) {
+  return apiGET<OwnerProfile>(`/business_owner/profile?id_dueno=${id_dueno}`);
 }
+
+// 🟩 Obtener negocio del dueño
+export async function listMyBusinesses(id_dueno: string) {
+  return apiGET<MyBusiness>(`/business_owner/my_business?id_dueno=${id_dueno}`);
+}
+
+export async function updateMyBusiness(payload: {
+  nombre_fantasia?: string;
+  rubro?: string;
+  telefono?: string;
+  email?: string;
+  direccion?: string;
+  sitio_web?: string;
+  horarios?: string;
+  descripcion?: string;
+}) {
+  return apiFormPUT<{ message: string }>("/business_owner/update_business", payload);
+}
+
 
 // 🟦 Obtener lista de deportes
 export async function listSports() {

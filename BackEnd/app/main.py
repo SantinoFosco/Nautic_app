@@ -1,23 +1,32 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import spot_routes, business_owner_routes, admin_routes, test_routes, user_routes,deporte_routes
+from starlette.middleware.sessions import SessionMiddleware
+from app.api import spot_routes, business_owner_routes, admin_routes, test_routes, user_routes, deporte_routes
 from app.core.database import Base, engine
 
 app = FastAPI(title="Nautic API", version="1.0")
 
-# 🔹 Esto crea las tablas automáticamente si no existen
-Base.metadata.create_all(bind=engine)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="change_me",
+    same_site="lax",         # OK si usás localhost/localhost
+    https_only=False,        # Dev en HTTP
+)
 
-# Middleware CORS
+# ---- CORS correcto (ver punto 2) ----
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Registrar endpoints
+# Routers
 app.include_router(spot_routes.router)
 app.include_router(business_owner_routes.router)
 app.include_router(user_routes.router)
