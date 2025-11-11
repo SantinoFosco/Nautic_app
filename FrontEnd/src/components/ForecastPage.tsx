@@ -153,18 +153,15 @@ export default function ForecastPage() {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
             <SummaryCard
               title="Puntuación Kayak"
-              value={`${kayakScore?.score ?? 0}/100`}
-              color="emerald"
+          value={kayakScore?.score ?? 0}
             />
             <SummaryCard
               title="Puntuación Surf"
-              value={`${surfScore?.score ?? 0}/100`}
-              color="emerald"
+          value={surfScore?.score ?? 0}
             />
             <SummaryCard
               title="Puntuación Kite"
-              value={`${kiteScore?.score ?? 0}/100`}
-              color="emerald"
+          value={kiteScore?.score ?? 0}
             />
           </div>
         </div>
@@ -233,36 +230,32 @@ function Chip({ children }: { children: React.ReactNode }) {
     </span>
   );
 }
-function SummaryCard({
-  title,
-  value,
-  color,
-}: {
-  title: string;
-  value: string;
-  color: "blue" | "teal" | "emerald" | "slate";
-}) {
-  const colorMap: Record<string, string> = {
-    blue: "bg-blue-100 text-blue-700",
-    teal: "bg-teal-100 text-teal-700",
-    emerald: "bg-emerald-100 text-emerald-700",
-    slate: "bg-slate-100 text-slate-700",
-  };
+function scoreColor(score: number) {
+  if (score >= 75) return { text: "text-emerald-700", accent: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-700" };
+  if (score >= 50) return { text: "text-amber-600", accent: "bg-amber-500", badge: "bg-amber-100 text-amber-700" };
+  if (score >= 25) return { text: "text-orange-600", accent: "bg-orange-500", badge: "bg-orange-100 text-orange-700" };
+  return { text: "text-red-600", accent: "bg-red-500", badge: "bg-red-100 text-red-700" };
+}
+
+function SummaryCard({ title, value }: { title: string; value: number }) {
+  const color = scoreColor(value);
+
   return (
     <div className="rounded-2xl border bg-white shadow-sm p-4 relative overflow-hidden">
       <div
-        className={`absolute left-0 top-0 h-full w-1 ${
-          color === "blue"
-            ? "bg-blue-500"
-            : color === "teal"
-            ? "bg-teal-500"
-            : color === "emerald"
-            ? "bg-emerald-500"
-            : "bg-slate-400"
-        }`}
+        className={`absolute left-0 top-0 h-full w-1 ${color.accent}`}
       />
       <div className="text-xs text-slate-500">{title}</div>
-      <div className={`text-2xl font-bold mt-1 ${colorMap[color]}`}>{value}</div>
+      <div className={`text-2xl font-bold mt-1 ${color.badge}`}>{value.toFixed(0)}/100</div>
+      <div className={`mt-2 text-sm font-semibold ${color.text}`}>
+        {value >= 75
+          ? "Excelente"
+          : value >= 50
+          ? "Bueno"
+          : value >= 25
+          ? "Regular"
+          : "Pobre"}
+      </div>
     </div>
   );
 }

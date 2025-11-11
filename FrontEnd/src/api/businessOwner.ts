@@ -70,9 +70,23 @@ export type MyBusiness = {
   deportes: { id_deporte: number; nombre: string | null }[];
 };
 
-// 🟩 Listar negocios del dueño
-export async function listMyBusinesses()  {
-  return apiGET<MyBusiness>>(`/business_owner/my_business`);
+export type OwnerProfile = {
+  id_dueno: number;
+  nombre: string;
+  apellido: string;
+  telefono: string | null;
+  email: string;
+  fecha_creacion: string | null;
+};
+
+// 🟩 Obtener perfil del dueño
+export async function getOwnerProfile(id_dueno: string) {
+  return apiGET<OwnerProfile>(`/business_owner/profile?id_dueno=${id_dueno}`);
+}
+
+// 🟩 Obtener negocio del dueño
+export async function listMyBusinesses(id_dueno: string) {
+  return apiGET<MyBusiness>(`/business_owner/my_business?id_dueno=${id_dueno}`);
 }
 
 export async function updateMyBusiness(payload: {

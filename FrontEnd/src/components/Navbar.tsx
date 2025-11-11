@@ -34,18 +34,34 @@ export default function Navbar() {
     if (!storedType) return navigate("/login");
     if (storedType === "admin") return navigate("/admin-dashboard");
 
+    const ownerId = localStorage.getItem("ownerId");
+    if (!ownerId) return navigate("/login");
+
     try {
-      const n = await listMyBusinesses(); // devuelve el objeto del negocio (o 404)
-      if ((n.estado || "").toLowerCase() === "pendiente") {
+      const negocio = await listMyBusinesses(ownerId);
+      localStorage.setItem("hasBusiness", "true");
+      setHasBusiness(true);
+
+      if ((negocio.estado || "").toLowerCase() === "pendiente") {
         alert("Tu negocio está pendiente de habilitación. Te avisaremos cuando sea aprobado.");
-        // return; // descomentá si NO querés ir al edit cuando está pendiente
       }
+
       navigate("/business-edit");
     } catch (e: any) {
       const msg = String(e?.message || "");
-      if (msg.includes(": 404")) return navigate("/business"); // no tiene negocio
+      if (msg.includes(": 404")) {
+        localStorage.setItem("hasBusiness", "false");
+        setHasBusiness(false);
+        navigate("/business");
+        return;
+      }
       if (msg.includes(": 403")) {
         alert("Tu negocio está pendiente de aprobación.");
+        return;
+      }
+      if (msg.includes(": 401")) {
+        localStorage.clear();
+        navigate("/login");
         return;
       }
       navigate("/login");

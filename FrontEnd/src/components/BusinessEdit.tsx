@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiGET, apiFormPUT, apiFormPOST } from "../api/client";
+import { apiFormPOST } from "../api/client";
+import {
+  getOwnerProfile,
+  listMyBusinesses,
+  updateMyBusiness,
+  OwnerProfile,
+} from "../api/businessOwner";
 
 type FormState = {
   name: string;
@@ -12,30 +18,6 @@ type FormState = {
   schedule: string;
   description: string;
 };
-
-type ProfileState = {
-  nombre: string;
-  apellido: string;
-  telefono: string | null;
-  email: string;
-  fecha_creacion: string | null;
-};
-
-type MyBusinessResponse =
-  | { hasBusiness: false }
-  | ({
-      hasBusiness: true;
-      nombre_fantasia: string;
-      rubro?: string | null;
-      direccion?: string | null;
-      telefono?: string | null;
-      email?: string | null;
-      sitio_web?: string | null;
-      horarios?: string | null;
-      descripcion?: string | null;
-      estado: "activo" | "inactivo" | "pendiente";
-      deportes?: { id_deporte: number; nombre: string | null }[];
-    });
 
 const EMPTY: FormState = {
   name: "",
@@ -51,53 +33,59 @@ const EMPTY: FormState = {
 export default function BusinessEdit() {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(EMPTY);
-  const [profile, setProfile] = useState<ProfileState | null>(null);
+  const [profile, setProfile] = useState<OwnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const ownerId = localStorage.getItem("ownerId");
+    if (!ownerId) {
+      navigate("/login");
+      return;
+    }
+    const validOwnerId = ownerId;
+
     async function load() {
       try {
-        // 1) Perfil desde la sesión
-        const me = await apiGET<ProfileState>("/business_owner/profile");
-        setProfile({
-          nombre: me.nombre ?? "",
-          apellido: me.apellido ?? "",
-          telefono: me.telefono ?? "",
-          email: me.email ?? "",
-          fecha_creacion: me.fecha_creacion ?? null,
-        });
+        const [profileData, businessData] = await Promise.all([
+          getOwnerProfile(validOwnerId),
+          listMyBusinesses(validOwnerId),
+        ]);
 
-        // 2) Negocio del dueño (flag o 404)
-        const resp = await apiGET<MyBusinessResponse>("/business_owner/my_business");
+        setProfile(profileData);
 
-        if ("hasBusiness" in resp && resp.hasBusiness === false) {
-          navigate("/business"); // no tiene negocio → registrar
-          return;
-        }
-
-        const negocio = resp as Exclude<MyBusinessResponse, { hasBusiness: false }>;
-
-        if ((negocio.estado || "").toLowerCase() === "pendiente") {
+        if ((businessData.estado || "").toLowerCase() === "pendiente") {
           setError("Tu negocio aún está pendiente de aprobación.");
-          // return; // ← descomentá si NO querés permitir edición estando pendiente
         }
 
         setForm({
-          name: negocio.nombre_fantasia || "",
-          type: negocio.rubro || "",
-          address: negocio.direccion || "",
-          phone: negocio.telefono || "",
-          email: negocio.email || "",
-          socials: negocio.sitio_web || "",
-          schedule: negocio.horarios || "",
-          description: negocio.descripcion || "",
+          name: businessData.nombre_fantasia || "",
+          type: businessData.rubro || "",
+          address: businessData.direccion || "",
+          phone: businessData.telefono || "",
+          email: businessData.email || "",
+          socials: businessData.sitio_web || "",
+          schedule: businessData.horarios || "",
+          description: businessData.descripcion || "",
         });
+
+        localStorage.setItem("hasBusiness", "true");
       } catch (e: any) {
         const msg = String(e?.message || "");
-        if (msg.includes(": 401")) return navigate("/login");
-        if (msg.includes(": 404")) { navigate("/business"); return; }
-        if (msg.includes(": 403")) { setError("Tu negocio aún está pendiente de aprobación."); return; }
+        if (msg.includes(": 401")) {
+          localStorage.clear();
+          navigate("/login");
+          return;
+        }
+        if (msg.includes(": 404")) {
+          localStorage.setItem("hasBusiness", "false");
+          navigate("/business");
+          return;
+        }
+        if (msg.includes(": 403")) {
+          setError("Tu negocio aún está pendiente de aprobación.");
+          return;
+        }
         setError("No se pudieron cargar los datos.");
       } finally {
         setLoading(false);
@@ -123,10 +111,7 @@ export default function BusinessEdit() {
         horarios: form.schedule,
         descripcion: form.description,
       };
-      const json = await apiFormPUT<{ message: string }>(
-        "/business_owner/update_business",
-        payload
-      );
+      const json = await updateMyBusiness(payload);
       alert(json.message);
       navigate("/business");
     } catch (err) {

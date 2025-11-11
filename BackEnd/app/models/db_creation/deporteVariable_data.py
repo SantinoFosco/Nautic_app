@@ -37,7 +37,7 @@ DATA = [
     {"id_deporte": 2, "nombre_variable": "feelsLikeMaxTemperature",     "umbral_min": 18,  "umbral_max": 38,   "peso": 5,  "estado": "activo", "operador": "between"},
     {"id_deporte": 2, "nombre_variable": "feelsLikeMinTemperature",     "umbral_min": 12,  "umbral_max": 30,   "peso": 5,  "estado": "activo", "operador": "between"},
     {"id_deporte": 2, "nombre_variable": "waterTemperature",            "umbral_min": 15,  "umbral_max": 30,   "peso": 6,  "estado": "activo", "operador": "between"},
-    {"id_deporte": 2, "nombre_variable": "waveHeight",                  "umbral_min": 0.8, "umbral_max": 3.0,  "peso": 10,  "estado": "activo", "operador": "max"},
+    {"id_deporte": 2, "nombre_variable": "waveHeight",                  "umbral_min": 0.8, "umbral_max": 3.0,  "peso": 10,  "estado": "activo", "operador": "between"},
     {"id_deporte": 2, "nombre_variable": "wavePeriod",                  "umbral_min": 8,   "umbral_max": 16,   "peso": 8,  "estado": "activo", "operador": "between"},
 
     # ===== KAYAK (id_deporte = 3) =====

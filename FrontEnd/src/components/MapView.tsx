@@ -366,7 +366,15 @@ export default function MapView() {
 
                       {biz.sitio_web && (
                         <p className="text-center text-sm text-[#0D3B66] mt-3 underline">
-                          <a href={biz.sitio_web} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={
+                              biz.sitio_web.startsWith("http://") || biz.sitio_web.startsWith("https://")
+                                ? biz.sitio_web
+                                : `https://${biz.sitio_web}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             <span className="inline-flex items-center gap-1">
                               <Globe className="w-4 h-4" /> Sitio web
                             </span>
