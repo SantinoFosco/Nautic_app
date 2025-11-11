@@ -2,6 +2,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { UserRound, ShieldCheck } from "lucide-react";
 import logo from "../assets/nautic-logo.png";
+import { apiFormPOST } from "../api/client";
+import { listMyBusinesses } from "../api/businessOwner";
 
 export default function Navbar() {
   const location = useLocation();
@@ -9,29 +11,44 @@ export default function Navbar() {
   const [userType, setUserType] = useState<string | null>(null);
   const [hasBusiness, setHasBusiness] = useState<boolean>(false);
 
+  const handleLogout = async () => {
+    try {
+      await apiFormPOST("/user/logout", {}); // borra la sesión del middleware
+    } finally {
+      localStorage.removeItem("ownerId");
+      localStorage.removeItem("ownerEmail");
+      localStorage.removeItem("userType");
+      localStorage.removeItem("hasBusiness");
+      navigate("/login", { replace: true });
+    }
+  };
+
   useEffect(() => {
     const storedType = localStorage.getItem("userType");
     setUserType(storedType);
     setHasBusiness(localStorage.getItem("hasBusiness") === "true");
   }, [location.pathname]);
 
-  const handleProfileClick = () => {
+  const handleProfileClick = async () => {
     const storedType = localStorage.getItem("userType");
-    const ownerId = localStorage.getItem("ownerId");
-    if (!storedType || !ownerId) {
-      navigate("/login");
-      return;
-    }
+    if (!storedType) return navigate("/login");
+    if (storedType === "admin") return navigate("/admin-dashboard");
 
-    if (storedType === "admin") {
-      navigate("/admin-dashboard");
-    } else {
-      const storedHasBusiness = localStorage.getItem("hasBusiness") === "true";
-      if (storedHasBusiness) {
-        navigate("/business-edit");
-      } else {
-        navigate("/business");
+    try {
+      const n = await listMyBusinesses(); // devuelve el objeto del negocio (o 404)
+      if ((n.estado || "").toLowerCase() === "pendiente") {
+        alert("Tu negocio está pendiente de habilitación. Te avisaremos cuando sea aprobado.");
+        // return; // descomentá si NO querés ir al edit cuando está pendiente
       }
+      navigate("/business-edit");
+    } catch (e: any) {
+      const msg = String(e?.message || "");
+      if (msg.includes(": 404")) return navigate("/business"); // no tiene negocio
+      if (msg.includes(": 403")) {
+        alert("Tu negocio está pendiente de aprobación.");
+        return;
+      }
+      navigate("/login");
     }
   };
 
@@ -42,21 +59,17 @@ export default function Navbar() {
 
   return (
     <nav
-      className="
+      className={`
         fixed top-0 inset-x-0 z-[1000]
         bg-[#0D3B66] text-white shadow-md h-16
         flex items-center justify-between px-8
-      "
+      `}
       role="navigation"
       aria-label="Nautic main"
     >
       {/* IZQUIERDA: Logo */}
       <div className="flex items-center">
-        <img
-          src={logo}
-          alt="Nautic"
-          className="h-10 w-auto object-contain"
-        />
+        <img src={logo} alt="Nautic" className="h-10 w-auto object-contain" />
       </div>
 
       {/* CENTRO: menú (centrado óptico) */}
@@ -76,45 +89,49 @@ export default function Navbar() {
 
       {/* DERECHA: Acciones o perfil */}
       {userType ? (
-        <button
-          onClick={handleProfileClick}
-          className="
-            flex items-center gap-2 border border-white/80 text-white px-4 py-2 rounded-md
-            text-sm font-medium hover:bg-white hover:text-[#0D3B66]
-            transition-colors
-          "
-        >
-          {userType === "admin" ? (
-            <>
-              <ShieldCheck className="w-5 h-5" />
-              Panel admin
-            </>
-          ) : (
-            <>
-              <UserRound className="w-5 h-5" />
-              {hasBusiness ? "Mi negocio" : "Mis datos"}
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleProfileClick}
+            className="border border-white/80 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-white hover:text-[#0D3B66] transition-colors"
+          >
+            {userType === "admin" ? (
+              <>
+                <ShieldCheck className="w-5 h-5 inline-block mr-1" />
+                Panel admin
+              </>
+            ) : (
+              <>
+                <UserRound className="w-5 h-5 inline-block mr-1" />
+                {hasBusiness ? "Mi negocio" : "Mis datos"}
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleLogout}
+            className="border border-white/80 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-white hover:text-[#0D3B66] transition-colors"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       ) : (
         <div className="flex items-center gap-3">
           <Link
             to="/register"
-            className="
+            className={`
               border border-white/80 text-white px-4 py-2 rounded-md
               text-sm font-medium hover:bg-white hover:text-[#0D3B66]
               transition-colors
-            "
+            `}
           >
             Registrar negocio
           </Link>
           <Link
             to="/login"
-            className="
+            className={`
               border border-white/80 text-white px-4 py-2 rounded-md
               text-sm font-medium hover:bg-white hover:text-[#0D3B66]
               transition-colors
-            "
+            `}
           >
             Iniciar sesión
           </Link>

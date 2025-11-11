@@ -35,7 +35,7 @@ export default function ForecastPage() {
 
   // 🟦 Traer lista de spots desde el backend
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/spot/list?day=0")
+    fetch("http://localhost:8000/spot/list?day=0")
       .then((r) => r.json())
       .then(setSpots)
       .catch(() => console.warn("No se pudieron cargar los spots"));
@@ -56,7 +56,7 @@ export default function ForecastPage() {
       try {
         setLoading(true);
         const res = await fetch(
-          `http://127.0.0.1:8000/spot/general_weather?lat=${spot.lat}&lon=${spot.lon}&day=${day}`
+          `http://localhost:8000/spot/general_weather?lat=${spot.lat}&lon=${spot.lon}&day=${day}`
         );
         if (!res.ok) throw new Error("Error al obtener datos");
         const json = await res.json();
@@ -72,7 +72,7 @@ export default function ForecastPage() {
   // 🟦 Traer puntuaciones de deportes
   useEffect(() => {
     if (!spot) return;
-    const url = `http://127.0.0.1:8000/spot/sportspoints?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
+    const url = `http://localhost:8000/spot/sportspoints?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
     (async () => {
       try {
         const res = await fetch(url);

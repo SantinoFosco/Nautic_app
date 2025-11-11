@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiGET, apiFormPUT, apiFormPOST } from "../api/client";
 
 type FormState = {
   name: string;
@@ -20,6 +21,22 @@ type ProfileState = {
   fecha_creacion: string | null;
 };
 
+type MyBusinessResponse =
+  | { hasBusiness: false }
+  | ({
+      hasBusiness: true;
+      nombre_fantasia: string;
+      rubro?: string | null;
+      direccion?: string | null;
+      telefono?: string | null;
+      email?: string | null;
+      sitio_web?: string | null;
+      horarios?: string | null;
+      descripcion?: string | null;
+      estado: "activo" | "inactivo" | "pendiente";
+      deportes?: { id_deporte: number; nombre: string | null }[];
+    });
+
 const EMPTY: FormState = {
   name: "",
   type: "",
@@ -38,75 +55,56 @@ export default function BusinessEdit() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const id_dueno = localStorage.getItem("ownerId");
-  const hasBusiness = localStorage.getItem("hasBusiness") === "true";
-
   useEffect(() => {
-    if (!id_dueno) {
-      navigate("/login");
-      return;
-    }
-
-    if (!hasBusiness) {
-      navigate("/business");
-      return;
-    }
-
-    async function loadData() {
+    async function load() {
       try {
-        const [profileRes, businessRes] = await Promise.all([
-          fetch(`http://127.0.0.1:8000/business_owner/profile?id_dueno=${id_dueno}`),
-          fetch(`http://127.0.0.1:8000/business_owner/my_business?id_dueno=${id_dueno}`),
-        ]);
-
-        if (!profileRes.ok) {
-          throw new Error("Error al cargar los datos del usuario");
-        }
-        const profileData = await profileRes.json();
+        // 1) Perfil desde la sesión
+        const me = await apiGET<ProfileState>("/business_owner/profile");
         setProfile({
-          nombre: profileData.nombre ?? "",
-          apellido: profileData.apellido ?? "",
-          telefono: profileData.telefono ?? "",
-          email: profileData.email ?? "",
-          fecha_creacion: profileData.fecha_creacion ?? null,
+          nombre: me.nombre ?? "",
+          apellido: me.apellido ?? "",
+          telefono: me.telefono ?? "",
+          email: me.email ?? "",
+          fecha_creacion: me.fecha_creacion ?? null,
         });
 
-        if (!businessRes.ok) {
-          if (businessRes.status === 404) {
-            navigate("/business");
-            return;
-          }
-          if (businessRes.status === 403) {
-            setError("Tu negocio aún está pendiente de aprobación.");
-            return;
-          }
-          throw new Error("Error al traer el negocio");
+        // 2) Negocio del dueño (flag o 404)
+        const resp = await apiGET<MyBusinessResponse>("/business_owner/my_business");
+
+        if ("hasBusiness" in resp && resp.hasBusiness === false) {
+          navigate("/business"); // no tiene negocio → registrar
+          return;
         }
 
-        const businessJson = await businessRes.json();
-        const negocio = Array.isArray(businessJson) ? businessJson[0] : businessJson;
-        if (negocio) {
-          setForm({
-            name: negocio.nombre_fantasia || "",
-            type: negocio.rubro || "",
-            address: negocio.direccion || "",
-            phone: negocio.telefono || "",
-            email: negocio.email || "",
-            socials: negocio.sitio_web || "",
-            schedule: negocio.horarios || "",
-            description: negocio.descripcion || "",
-          });
+        const negocio = resp as Exclude<MyBusinessResponse, { hasBusiness: false }>;
+
+        if ((negocio.estado || "").toLowerCase() === "pendiente") {
+          setError("Tu negocio aún está pendiente de aprobación.");
+          // return; // ← descomentá si NO querés permitir edición estando pendiente
         }
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || "No se pudieron cargar los datos.");
+
+        setForm({
+          name: negocio.nombre_fantasia || "",
+          type: negocio.rubro || "",
+          address: negocio.direccion || "",
+          phone: negocio.telefono || "",
+          email: negocio.email || "",
+          socials: negocio.sitio_web || "",
+          schedule: negocio.horarios || "",
+          description: negocio.descripcion || "",
+        });
+      } catch (e: any) {
+        const msg = String(e?.message || "");
+        if (msg.includes(": 401")) return navigate("/login");
+        if (msg.includes(": 404")) { navigate("/business"); return; }
+        if (msg.includes(": 403")) { setError("Tu negocio aún está pendiente de aprobación."); return; }
+        setError("No se pudieron cargar los datos.");
       } finally {
         setLoading(false);
       }
     }
-
-    loadData();
-  }, [hasBusiness, id_dueno, navigate]);
+    load();
+  }, [navigate]);
 
   const onChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -114,27 +112,21 @@ export default function BusinessEdit() {
 
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id_dueno) return;
-
-    const params = new URLSearchParams({
-      id_dueno,
-      nombre_fantasia: form.name,
-      rubro: form.type,
-      telefono: form.phone,
-      email: form.email,
-      direccion: form.address,
-      sitio_web: form.socials,
-      horarios: form.schedule,
-      descripcion: form.description,
-    });
-
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/business_owner/update_business?${params.toString()}`,
-        { method: "PUT" }
+      const payload = {
+        nombre_fantasia: form.name,
+        rubro: form.type,
+        telefono: form.phone,
+        email: form.email,
+        direccion: form.address,
+        sitio_web: form.socials,
+        horarios: form.schedule,
+        descripcion: form.description,
+      };
+      const json = await apiFormPUT<{ message: string }>(
+        "/business_owner/update_business",
+        payload
       );
-      if (!res.ok) throw new Error("Error al guardar");
-      const json = await res.json();
       alert(json.message);
       navigate("/business");
     } catch (err) {
@@ -205,12 +197,13 @@ export default function BusinessEdit() {
               <p className="text-gray-500 text-sm">No se pudo cargar el perfil.</p>
             )}
             <button
-              onClick={() => {
-                localStorage.removeItem("ownerId");
-                localStorage.removeItem("ownerEmail");
-                localStorage.removeItem("userType");
-                localStorage.removeItem("hasBusiness");
-                navigate("/");
+              onClick={async () => {
+                try {
+                  await apiFormPOST("/user/logout", {});
+                } finally {
+                  localStorage.clear();
+                  navigate("/", { replace: true });
+                }
               }}
               className="mt-6 inline-flex items-center justify-center px-5 py-2 rounded-full border border-[#0b2849]/40 text-[#0b2849] text-sm font-semibold hover:bg-[#0b2849] hover:text-white transition-colors"
             >
@@ -246,63 +239,19 @@ export default function BusinessEdit() {
                   <option value="Otro">Otro</option>
                 </select>
 
-                <input
-                  name="address"
-                  value={form.address}
-                  onChange={onChange}
-                  placeholder="Dirección"
-                  className="biz-input"
-                />
-                <input
-                  name="phone"
-                  value={form.phone}
-                  onChange={onChange}
-                  placeholder="Teléfono"
-                  className="biz-input"
-                />
-                <input
-                  name="email"
-                  value={form.email}
-                  onChange={onChange}
-                  placeholder="Email de contacto"
-                  className="biz-input"
-                />
-                <input
-                  name="socials"
-                  value={form.socials}
-                  onChange={onChange}
-                  placeholder="Sitio web o redes"
-                  className="biz-input"
-                />
-                <input
-                  name="schedule"
-                  value={form.schedule}
-                  onChange={onChange}
-                  placeholder="Horarios"
-                  className="biz-input"
-                />
-                <textarea
-                  name="description"
-                  value={form.description}
-                  onChange={onChange}
-                  placeholder="Descripción"
-                  rows={4}
-                  className="biz-textarea"
-                />
+                <input name="address" value={form.address} onChange={onChange} placeholder="Dirección" className="biz-input" />
+                <input name="phone" value={form.phone} onChange={onChange} placeholder="Teléfono" className="biz-input" />
+                <input name="email" value={form.email} onChange={onChange} placeholder="Email de contacto" className="biz-input" />
+                <input name="socials" value={form.socials} onChange={onChange} placeholder="Sitio web o redes" className="biz-input" />
+                <input name="schedule" value={form.schedule} onChange={onChange} placeholder="Horarios" className="biz-input" />
+                <textarea name="description" value={form.description} onChange={onChange} placeholder="Descripción" rows={4} className="biz-textarea" />
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="submit"
-                  className="px-6 py-3 rounded-full bg-[#0b2849] text-white font-semibold hover:bg-[#123b69] transition"
-                >
+                <button type="submit" className="px-6 py-3 rounded-full bg-[#0b2849] text-white font-semibold hover:bg-[#123b69] transition">
                   Guardar cambios
                 </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/business")}
-                  className="px-6 py-3 rounded-full bg-[#ECEFF3] text-[#7A8796] font-semibold hover:bg-[#E4E9EF] transition"
-                >
+                <button type="button" onClick={() => navigate("/business")} className="px-6 py-3 rounded-full bg-[#ECEFF3] text-[#7A8796] font-semibold hover:bg-[#E4E9EF] transition">
                   Cancelar
                 </button>
               </div>

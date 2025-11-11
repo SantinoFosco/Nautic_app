@@ -116,10 +116,10 @@ export default function MapView() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const resSpots = await fetch("http://127.0.0.1:8000/spot/list?day=0");
+        const resSpots = await fetch("http://localhost:8000/spot/list?day=0");
         const spotsData = await resSpots.json();
 
-        const resBusiness = await fetch("http://127.0.0.1:8000/spot/business_list");
+        const resBusiness = await fetch("http://localhost:8000/spot/business_list");
         const businessData = await resBusiness.json();
 
         const normalizedSpots: Spot[] = spotsData.map((s: any) => ({
@@ -200,7 +200,7 @@ export default function MapView() {
 
     if (spot.type === "business") {
       try {
-        const url = `http://127.0.0.1:8000/spot/business_details?lat=${spot.lat}&lon=${spot.lon}`;
+        const url = `http://localhost:8000/spot/business_details?lat=${spot.lat}&lon=${spot.lon}`;
         const res = await fetch(url);
         const details = await res.json();
         setData((prev) => ({ ...prev, [spot.id]: details || {} }));
@@ -216,7 +216,7 @@ export default function MapView() {
 
     setLoadingWeather(true);
     try {
-      const url = `http://127.0.0.1:8000/spot/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
+      const url = `http://localhost:8000/spot/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
       const res = await fetch(url);
       const json = await res.json();
       setData((prev) => ({ ...prev, [spot.id]: json }));
