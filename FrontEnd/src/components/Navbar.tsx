@@ -1,8 +1,39 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { UserRound, ShieldCheck } from "lucide-react";
 import logo from "../assets/nautic-logo.png";
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [userType, setUserType] = useState<string | null>(null);
+  const [hasBusiness, setHasBusiness] = useState<boolean>(false);
+
+  useEffect(() => {
+    const storedType = localStorage.getItem("userType");
+    setUserType(storedType);
+    setHasBusiness(localStorage.getItem("hasBusiness") === "true");
+  }, [location.pathname]);
+
+  const handleProfileClick = () => {
+    const storedType = localStorage.getItem("userType");
+    const ownerId = localStorage.getItem("ownerId");
+    if (!storedType || !ownerId) {
+      navigate("/login");
+      return;
+    }
+
+    if (storedType === "admin") {
+      navigate("/admin-dashboard");
+    } else {
+      const storedHasBusiness = localStorage.getItem("hasBusiness") === "true";
+      if (storedHasBusiness) {
+        navigate("/business-edit");
+      } else {
+        navigate("/business");
+      }
+    }
+  };
 
   const isActive = (path: string) =>
     location.pathname === path
@@ -43,29 +74,52 @@ export default function Navbar() {
         </ul>
       </div>
 
-      {/* DERECHA: Botones de acciones */}
-      <div className="flex items-center gap-3">
-        <Link
-          to="/register"
+      {/* DERECHA: Acciones o perfil */}
+      {userType ? (
+        <button
+          onClick={handleProfileClick}
           className="
-            border border-white/80 text-white px-4 py-2 rounded-md
+            flex items-center gap-2 border border-white/80 text-white px-4 py-2 rounded-md
             text-sm font-medium hover:bg-white hover:text-[#0D3B66]
             transition-colors
           "
         >
-          Registrar negocio
-        </Link>
-        <Link
-          to="/login"
-          className="
-            border border-white/80 text-white px-4 py-2 rounded-md
-            text-sm font-medium hover:bg-white hover:text-[#0D3B66]
-            transition-colors
-          "
-        >
-          Iniciar sesión
-        </Link>
-      </div>
+          {userType === "admin" ? (
+            <>
+              <ShieldCheck className="w-5 h-5" />
+              Panel admin
+            </>
+          ) : (
+            <>
+              <UserRound className="w-5 h-5" />
+              {hasBusiness ? "Mi negocio" : "Mis datos"}
+            </>
+          )}
+        </button>
+      ) : (
+        <div className="flex items-center gap-3">
+          <Link
+            to="/register"
+            className="
+              border border-white/80 text-white px-4 py-2 rounded-md
+              text-sm font-medium hover:bg-white hover:text-[#0D3B66]
+              transition-colors
+            "
+          >
+            Registrar negocio
+          </Link>
+          <Link
+            to="/login"
+            className="
+              border border-white/80 text-white px-4 py-2 rounded-md
+              text-sm font-medium hover:bg-white hover:text-[#0D3B66]
+              transition-colors
+            "
+          >
+            Iniciar sesión
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }

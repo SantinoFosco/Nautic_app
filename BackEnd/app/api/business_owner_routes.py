@@ -125,22 +125,28 @@ def list_my_business(id_dueno: int, db: Session = Depends(get_db)):
     if negocio.estado == EstadoNegocio.pendiente:
         raise HTTPException(status_code=403, detail="Negocio pendiente de aprobación")
 
+    deportes = []
+    for rel in negocio.deportes_rel or []:
+        deportes.append(
+            {
+                "id_deporte": rel.id_deporte,
+                "nombre": rel.deporte.nombre if rel.deporte else None,
+            }
+        )
+
     return {
         "nombre_fantasia": negocio.nombre_fantasia,
         "rubro": negocio.rubro,
         "sitio_web": negocio.sitio_web,
         "telefono": negocio.telefono,
         "email": negocio.email,
+        "sitio_web": negocio.sitio_web,
         "direccion": negocio.direccion,
         "lat": float(negocio.lat) if negocio.lat else None,
         "lon": float(negocio.lon) if negocio.lon else None,
         "horarios": negocio.horarios,
         "descripcion": negocio.descripcion,
-        "deportes": {
-            "principal": negocio.deporte1.nombre if negocio.deporte1 else None,
-            "secundario_1": negocio.deporte2.nombre if negocio.deporte2 else None,
-            "secundario_2": negocio.deporte3.nombre if negocio.deporte3 else None,
-        }
+        "deportes": deportes,
     }
 
 # ------------------------------------------------------

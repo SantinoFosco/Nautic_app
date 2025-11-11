@@ -15,11 +15,16 @@ export async function registerOwner(payload: {
 }
 
 // 🟩 Login del dueño (usa /user/login)
+export type LoginOwnerResponse = {
+  message: string;
+  id_dueno: number;
+  email: string;
+  tipo_usuario?: string;
+  haveBusiness?: boolean;
+};
+
 export async function loginOwner(payload: { email: string; password: string }) {
-  return apiFormPOST<{ message: string; id_dueno: number; email: string }>(
-    "/user/login",
-    payload
-  );
+  return apiFormPOST<LoginOwnerResponse>("/user/login", payload);
 }
 
 // ✅ Interfaz tipada para crear negocio (actualizada)
