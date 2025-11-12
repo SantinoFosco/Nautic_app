@@ -13,6 +13,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
+      localStorage.clear();
       await apiFormPOST("/user/logout", {}); // borra la sesión del middleware
     } finally {
       localStorage.removeItem("ownerId");
