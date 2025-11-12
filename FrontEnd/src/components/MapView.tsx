@@ -33,6 +33,7 @@ function normalizeSportName(name?: string | null): Sport | null {
   return null;
 }
 
+
 type Spot = {
   id: string;
   name: string;
@@ -84,7 +85,14 @@ const tiendaIcon = L.icon({
 
 const extractBusinessSports = (raw: any): Sport[] =>
   (Array.isArray(raw) ? raw : [])
-    .map((value) => normalizeSportName(typeof value === "string" ? value : value?.nombre))
+    .map((d: any) => {
+      const candidate =
+        (typeof d === "string" ? d : null) ??
+        d?.nombre ??
+        d?.codigo ??
+        d?.deporte?.nombre;
+      return normalizeSportName(candidate);
+    })
     .filter(Boolean) as Sport[];
 
 // 4. FUNCIÓN HELPER PARA DECIDIR EL ÍCONO
@@ -149,22 +157,12 @@ export default function MapView() {
             : undefined,
         }));
 
-const extractBusinessSports = (raw: any): Sport[] =>
-  (Array.isArray(raw) ? raw : [])
-    .map((d: any) => {
-      const candidate =
-        d?.nombre ??
-        d?.codigo ??
-        d?.deporte?.nombre ??
-        (typeof d === "string" ? d : null);
-      return normalizeSportName(candidate);
-    })
-    .filter(Boolean) as Sport[];
+        // --- Negocios (usa businessKey como id y normaliza lat/lon) ---
         const businesses: Spot[] = businessData.map((b: any) => ({
-          id: `business-${b.nombre_fantasia}-${b.lat}-${b.lon}`,
+          id: b.id_negocio,
           name: b.nombre_fantasia,
-          lat: b.lat,
-          lon: b.lon,
+          lat: Number(b.lat),
+          lon: Number(b.lon),
           type: "business" as const,
           rubro: b.rubro,
           direccion: b.direccion,
@@ -176,6 +174,22 @@ const extractBusinessSports = (raw: any): Sport[] =>
           nombre_fantasia: b.nombre_fantasia,
           sports: extractBusinessSports(b.deportes),
         }));
+
+        // DEBUG: ver id + deportes que llegaron en /spot/business_list
+      try {
+        console.groupCollapsed("[BUSINESS_LIST] negocios recibidos");
+        console.table(
+          businesses.map(b => ({
+            id: b.id,
+            nombre: b.nombre_fantasia,
+            deportes: (b.sports ?? []).join(", "),
+            lat: b.lat,
+            lon: b.lon,
+          }))
+        );
+        console.groupEnd();
+      } catch (e) {}
+
 
         setSpots([...normalizedSpots, ...businesses]);
         setData({});
@@ -208,14 +222,53 @@ const extractBusinessSports = (raw: any): Sport[] =>
     const baseSports = s.sports ?? [];
     const detailedSports = extractBusinessSports(data[s.id]?.sports);
     const sportsNorm = [...baseSports, ...detailedSports];
-    const matchesSports = sportsNorm.some((sp) => selectedSports.includes(sp));
+    return sportsNorm.some((sp) => selectedSports.includes(sp));
+    });
+  }, [selectedTypes, selectedSports, spots, data]);
 
-    const rubroNorm = normalizeSportName(s.rubro ?? null);
-    const matchesRubro = rubroNorm ? selectedSports.includes(rubroNorm) : false;
+// ===== Precarga de deportes de negocios (tabla NegocioDeporte) =====
+useEffect(() => {
+  const loadBusinessSports = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/business_owner/all_business_with_sports");
+      const arr = await res.json(); // [{ id_negocio?, nombre_fantasia, lat, lon, deportes:[{id_deporte,nombre}] }, ...]
 
-    return matchesSports || matchesRubro;
-  });
-}, [selectedTypes, selectedSports, spots]);
+      const byId = new Map<string, Sport[]>();
+      for (const b of arr ?? []) {
+        const key = b.id_negocio;
+        byId.set(key, extractBusinessSports(b.deportes));
+      }
+
+      // Merge: añadimos esos deportes a cada negocio existente
+      setSpots(prev =>
+        prev.map(s => {
+          if (s.type !== "business") return s;
+          const fetched = byId.get(s.id) ?? [];
+          if (!fetched.length) return s;
+          return {
+            ...s,
+            sports: Array.from(new Set([...(s.sports ?? []), ...fetched])),
+          };
+        })
+      );
+    } catch (e) {
+      console.warn("No se pudo precargar deportes de negocios", e);
+    }
+  };
+  // DEBUG: cuántos negocios quedaron sin deportes tras precarga
+setTimeout(() => {
+  try {
+    const onlyBiz = (sArr: Spot[]) => sArr.filter(s => s.type === "business");
+    const totalBiz = onlyBiz(spots).length;
+    const sinDep = onlyBiz(spots).filter(s => !s.sports || s.sports.length === 0).length;
+    console.info(`[PRELOAD] negocios totales: ${totalBiz} | sin deportes (post-merge): ${sinDep}`);
+  } catch (e) {}
+}, 0);
+
+  loadBusinessSports();
+}, []);
+
+
 
 useEffect(() => {
   if (!selectedId) return;

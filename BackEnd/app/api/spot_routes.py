@@ -78,11 +78,11 @@ async def get_business_spots(db: Session = Depends(get_db)):
             .order_by(Deporte.nombre.asc())
             .all()
         )
-
         deportes = [deporte.nombre for deporte in deportes_records]
 
         business_list.append(
             {
+                "id_negocio": negocio.id_negocio,
                 "name": negocio.nombre_fantasia,
                 "lat": lat,
                 "lon": lon,
@@ -94,23 +94,6 @@ async def get_business_spots(db: Session = Depends(get_db)):
 
     return business_list
 
-@router.get("/business_details")
-async def get_business_details(lat: float = Query(...), lon: float = Query(...), db: Session = Depends(get_db)):
-    business = (db.query(Negocio).filter(Negocio.estado == EstadoNegocio.activo, Negocio.lat == lat, Negocio.lon == lon).first())
-
-    if not business:
-        return {}
-    return {
-        "nombre_fantasia": business.nombre_fantasia,
-        "sports": business.deportes_rel,
-        "rubro": business.rubro,
-        "direccion": business.direccion,
-        "telefono": business.telefono,
-        "email": business.email,
-        "sitio_web": business.sitio_web,
-        "horarios": business.horarios,
-        "descripcion": business.descripcion
-    }
 
 # ------------------------------------------------------------
 # 🔹 Información de todos los negocios

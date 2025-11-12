@@ -216,3 +216,36 @@ def deactivate_business(user: Usuario = Depends(get_current_user), db: Session =
     negocio.estado = EstadoNegocio.inactivo
     db.commit()
     return {"message": "Negocio desactivado correctamente"}
+
+# ------------------------------------------------------
+# Listar todos los negocios con sus deportes asociados
+# ------------------------------------------------------
+@router.get("/all_business_with_sports")
+def get_all_business_with_sports(db: Session = Depends(get_db)):
+    negocios = db.query(Negocio).all()
+    result = []
+
+    for n in negocios:
+        deportes = []
+        for rel in (n.deportes_rel or []):
+            if rel.deporte:
+                deportes.append({
+                    "id_deporte": rel.deporte.id,
+                    "nombre": rel.deporte.nombre
+                })
+        result.append({
+            "id_negocio": n.id_negocio,
+            "nombre_fantasia": n.nombre_fantasia,
+            "rubro": n.rubro,
+            "telefono": n.telefono,
+            "email": n.email,
+            "direccion": n.direccion,
+            "lat": float(n.lat) if n.lat else None,
+            "lon": float(n.lon) if n.lon else None,
+            "horarios": n.horarios,
+            "descripcion": n.descripcion,
+            "deportes": deportes,
+            "estado": n.estado
+        })
+
+    return result
