@@ -224,7 +224,7 @@ def insert_forecast_for_all_spots(session: Session) -> None:
             print(f"✅ Spot {sp.id} ('{sp.nombre}') → {inserted} upserts.")
         except Exception as e:
             session.rollback()
-            print(f"❌ Error en spot {sp.id} ('{sp.nombre}') (coords={sp.coordenadas!r}): {e}")
+            print(f"❌ Error en spot {sp.id} ('{sp.nombre}'): {e}")
 
     # 🔄 Después de insertar todas las variables, ponderar deportes
     print("⚙️ Iniciando ponderación de deportes tras completar la ingesta...")
