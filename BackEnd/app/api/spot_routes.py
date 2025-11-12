@@ -79,6 +79,7 @@ async def get_business_spots(db: Session = Depends(get_db)):
             .all()
         )
         deportes = [deporte.nombre for deporte in deportes_records]
+        print("Deportes para negocio", negocio.nombre_fantasia, ":", deportes)
 
         business_list.append(
             {

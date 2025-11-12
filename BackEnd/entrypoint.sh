@@ -34,6 +34,7 @@ sequence = [
     ("app.models.db_creation.deporteVariable_data",   "seed_deporte_variable"),
     ("app.models.db_creation.tipoVariable_data",      "seed_tipo_variable_meteorologica"),
     ("app.models.db_creation.business_data",          "seed_businesses"),
+    ("app.models.db_creation.negocio_deporte",        "seed_negocio_deportes"),
 ]
 
 for mod_name, func in sequence:

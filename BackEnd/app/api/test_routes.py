@@ -13,6 +13,7 @@ from app.models.models import (
     DeporteSpot,
     ProveedorDatos,
     Negocio,
+    NegocioDeporte
 )
 
 router = APIRouter(
@@ -237,3 +238,16 @@ def drop_all_tables(db: Session = Depends(get_db)):
         )
 
     return {"mensaje": "Todas las tablas se eliminaron correctamente"}
+
+@router.get("/negociodeporte")
+def get_all_negocio_deporte(db: Session = Depends(get_db)):
+    """Devuelve las asociaciones entre negocios y deportes"""
+
+    asociaciones = db.query(NegocioDeporte).all()
+    return [
+        {
+            "id_negocio": nd.id_negocio,
+            "id_deporte": nd.id_deporte,
+        }
+        for nd in asociaciones
+    ]

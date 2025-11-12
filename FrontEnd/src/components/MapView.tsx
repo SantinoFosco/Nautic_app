@@ -145,6 +145,8 @@ export default function MapView() {
         const resBusiness = await fetch("http://localhost:8000/spot/business_list");
         const businessData = await resBusiness.json();
 
+        console.log("Negocios recibidos:", businessData);
+
         const normalizedSpots: Spot[] = spotsData.map((s: any) => ({
           id: `spot-${s.name}-${s.lat}-${s.lon}`,
           name: s.name,

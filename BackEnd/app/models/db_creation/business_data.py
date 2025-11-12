@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from app.core.database import SessionLocal
-from app.models.models import Negocio, Usuario, EstadoNegocio, NegocioDeporte
+from app.models.models import Negocio, Usuario, EstadoNegocio
 
 businesses_data = [
     {
@@ -46,12 +46,6 @@ businesses_data = [
     },
 ]
 
-negocio_deportes = [
-    {"id_negocio": 1, "id_deporte": 2},
-    {"id_negocio": 2, "id_deporte": 3},
-    {"id_negocio": 3, "id_deporte": 1},
-]
-
 def seed_businesses():
     db = SessionLocal()
     try:
@@ -93,13 +87,6 @@ def seed_businesses():
             db.add(nuevo_negocio)
 
         db.commit()
-
-        for negocio_deporte in negocio_deportes:
-            nuevo_negocio_deporte = NegocioDeporte(
-                id_negocio=negocio_deporte["id_negocio"],
-                id_deporte=negocio_deporte["id_deporte"],
-            )
-            db.add(nuevo_negocio_deporte)
 
         print("✅ Negocios insertados correctamente.")
 
