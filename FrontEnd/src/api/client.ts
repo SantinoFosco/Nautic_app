@@ -1,11 +1,9 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // 🔹 GET genérico
 export async function apiGET<T>(url: string): Promise<T> {
-  const res = await fetch(`${BASE_URL}${url}`);
-  if (!res.ok) {
-    throw new Error(`Error GET ${url}: ${res.status}`);
-  }
+  const res = await fetch(`${BASE_URL}${url}`, { credentials: "include" });
+  if (!res.ok) throw new Error(`Error GET ${url}: ${res.status}`);
   return res.json();
 }
 
@@ -17,6 +15,7 @@ export async function apiFormPOST<T>(
   const query = new URLSearchParams(data).toString();
   const res = await fetch(`${BASE_URL}${url}?${query}`, {
     method: "POST",
+    credentials: "include"
   });
 
   if (!res.ok) {
@@ -33,6 +32,7 @@ export async function apiFormPUT<T>(
   const query = new URLSearchParams(data).toString();
   const res = await fetch(`${BASE_URL}${url}?${query}`, {
     method: "PUT",
+    credentials: "include"
   });
 
   if (!res.ok) {
@@ -48,6 +48,7 @@ export async function apiFormPUT<T>(
 export async function apiDELETE<T>(url: string): Promise<T> {
   const res = await fetch(`${BASE_URL}${url}`, {
     method: "DELETE",
+    credentials: "include"
   });
 
   if (!res.ok) {

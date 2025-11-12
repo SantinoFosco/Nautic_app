@@ -1,4 +1,4 @@
-import { useEffect, useState, ReactNode } from "react"; 
+import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../components/AdminLayout";
 import {
   getPendingBusinesses,
@@ -11,7 +11,7 @@ import {
   Phone,
   Clock,
   Globe,
-  MessageSquare,
+  ClipboardList,
 } from "lucide-react";
 import ApproveBusinessModal from "../components/ApproveBusinessModal";
 import RejectBusinessModal from "../components/RejectBusinessModal";
@@ -71,93 +71,106 @@ export default function PendingBusinessesPage() {
   };
 
   const formatTimestamp = (isoString: string) => {
-    return new Date(isoString).toLocaleString("es-AR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      return new Date(isoString).toLocaleString("es-AR", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return isoString;
+    }
   };
+
+  const pendingCount = useMemo(() => businesses.length, [businesses]);
 
   return (
     <AdminLayout>
-      <div className="flex justify-between items-center mb-8">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-8">
         <div>
-          <h2 className="text-3xl font-bold text-[#0b2849] mb-2">
+          <h1 className="text-3xl font-bold text-[#0b2849] mb-1">
             Negocios pendientes de aprobación
-          </h2>
-          <p className="text-gray-500">
-            Revisa y aprueba los negocios que están esperando validación
+          </h1>
+          <p className="text-gray-600">
+            Revisá la información enviada y decide si aprobar o rechazar la solicitud.
           </p>
         </div>
-        <span className="bg-blue-100 text-blue-800 text-sm font-medium px-4 py-1.5 rounded-full">
-          {businesses.length} pendiente{businesses.length !== 1 ? "s" : ""}
+        <span className="inline-flex items-center gap-2 bg-[#e5efff] text-[#0b2849] text-sm font-semibold px-4 py-1.5 rounded-full shadow-sm">
+          {pendingCount} pendiente{pendingCount === 1 ? "" : "s"}
         </span>
-      </div>
+      </header>
 
       {/* === Contenido de la página === */}
-      {loading && <p>Cargando...</p>}
+      {loading && (
+        <div className="flex justify-center items-center py-12 text-gray-500">
+          Cargando negocios...
+        </div>
+      )}
       {error && <p className="text-red-600">{error}</p>}
 
-      <div className="space-y-6">
-        {!loading && businesses.length === 0 && (
-          <p className="text-gray-500 text-center py-10">
-            No hay negocios pendientes de aprobación.
-          </p>
-        )}
+      {!loading && businesses.length === 0 ? (
+        <div className="bg-white border border-dashed border-gray-300 rounded-3xl p-10 text-center text-gray-500">
+          No hay negocios pendientes de aprobación.
+        </div>
+      ) : (
+        <ul className="space-y-6">
+          {businesses.map((biz) => (
+            <li
+              key={biz.id_negocio}
+              className="bg-white rounded-3xl shadow-sm border border-[#dfe7f4] px-6 py-6"
+            >
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div className="space-y-3">
+                  <div>
+                    <h2 className="text-xl font-semibold text-[#0b2849]">
+                      {biz.nombre_fantasia}
+                    </h2>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span className="inline-flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#0b2849]" />
+                        {formatTimestamp(biz.fecha_creacion)} hs
+                      </span>
+                    </div>
+                  </div>
 
-        {businesses.map((biz) => (
-          <div
-            key={biz.id_negocio}
-            className="bg-white rounded-xl shadow p-6 border border-gray-200"
-          >
-            {/* Header de la tarjeta */}
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-bold text-[#0b2849]">
-                  {biz.nombre_fantasia}
-                </h3>
-                <span className="text-sm text-gray-500">
-                  Enviado el {formatTimestamp(biz.fecha_creacion)} hs
-                </span>
+                  <div className="grid sm:grid-cols-2 gap-3 text-sm text-gray-600">
+                    <DetailItem icon={<MapPin className="w-4 h-4" />} label="Dirección" value={biz.direccion} />
+                    <DetailItem icon={<Phone className="w-4 h-4" />} label="Teléfono" value={biz.telefono} />
+                    <DetailItem icon={<Mail className="w-4 h-4" />} label="Email" value={biz.email} />
+                    <DetailItem icon={<Globe className="w-4 h-4" />} label="Sitio web" value={biz.sitio_web} />
+                    <DetailItem icon={<Clock className="w-4 h-4" />} label="Horario" value={biz.horarios} />
+                    <DetailItem icon={<ClipboardList className="w-4 h-4" />} label="Rubro" value={biz.rubro} />
+                  </div>
+
+                  {biz.descripcion && (
+                    <p className="text-sm text-gray-600 italic">
+                      “{biz.descripcion}”
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  <button
+                    onClick={() => setApprovingBusiness(biz)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-600 text-sm font-semibold hover:bg-emerald-200 transition"
+                  >
+                    Aprobar
+                  </button>
+                  <button
+                    onClick={() => setRejectingBusiness(biz)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 text-red-600 text-sm font-semibold hover:bg-red-200 transition"
+                  >
+                    Rechazar
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setApprovingBusiness(biz)}
-                  className="bg-green-100 text-green-700 font-semibold px-5 py-2 rounded-md hover:bg-green-200 transition"
-                >
-                  Aprobar
-                </button>
-                <button
-                  onClick={() => setRejectingBusiness(biz)}
-                  className="bg-red-100 text-red-700 font-semibold px-5 py-2 rounded-md hover:bg-red-200 transition"
-                >
-                  Rechazar
-                </button>
-              </div>
-            </div>
-
-            {/* Grilla de detalles */}
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-              <InfoItem icon={<MapPin />} text={biz.direccion} />
-              <InfoItem icon={<Phone />} text={biz.telefono} />
-              <InfoItem icon={<Mail />} text={biz.email} />
-              <InfoItem icon={<Globe />} text={biz.sitio_web} />
-              <InfoItem icon={<Clock />} text={biz.horarios} />
-            </div>
-
-            {/* Descripción */}
-            <div className="mt-4">
-              <InfoItem
-                icon={<MessageSquare />}
-                text={biz.descripcion}
-                isBlock
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/* === Modales === */}
       {approvingBusiness && (
@@ -179,27 +192,25 @@ export default function PendingBusinessesPage() {
   );
 }
 
-// Componente auxiliar para los items de info
-function InfoItem({
-  icon,
-  text,
-  isBlock = false,
-}: {
-  icon: ReactNode; 
-  text: string | null;
-  isBlock?: boolean;
-}) {
-  if (!text) return null;
+type DetailItemProps = {
+  icon: React.ReactNode;
+  label: string;
+  value: string | null;
+};
+
+function DetailItem({ icon, label, value }: DetailItemProps) {
+  if (!value) return null;
   return (
-    <div
-      className={`flex items-start gap-2 text-gray-700 ${
-        isBlock ? "col-span-2" : ""
-      }`}
-    >
-      <div className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0">{icon}</div>
-      <span className={isBlock ? "whitespace-pre-wrap" : "truncate"}>
-        {text}
-      </span>
+    <div className="flex items-start gap-3">
+      <div className="p-1.5 rounded-lg bg-slate-100 text-[#0b2849] flex-shrink-0">
+        {icon}
+      </div>
+      <div className="flex flex-col text-sm text-gray-700">
+        <span className="text-xs uppercase tracking-wide text-gray-400">
+          {label}
+        </span>
+        <span className="break-words">{value}</span>
+      </div>
     </div>
   );
 }

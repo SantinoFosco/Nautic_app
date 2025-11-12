@@ -57,6 +57,20 @@ def seed_businesses():
                 print(f"⚠️  No se encontró usuario con email {negocio_data['email_dueno']}, se omite negocio.")
                 continue
 
+            existing = (
+                db.query(Negocio)
+                .filter(
+                    Negocio.id_dueno == dueno.id,
+                    Negocio.nombre_fantasia == negocio_data["nombre_fantasia"],
+                )
+                .first()
+            )
+            if existing:
+                print(
+                    f"ℹ️  El negocio '{negocio_data['nombre_fantasia']}' ya existe para {negocio_data['email_dueno']}, se omite."
+                )
+                continue
+
             nuevo_negocio = Negocio(
                 id_dueno=dueno.id,
                 nombre_fantasia=negocio_data["nombre_fantasia"],
@@ -73,6 +87,7 @@ def seed_businesses():
             db.add(nuevo_negocio)
 
         db.commit()
+
         print("✅ Negocios insertados correctamente.")
 
     except Exception as e:

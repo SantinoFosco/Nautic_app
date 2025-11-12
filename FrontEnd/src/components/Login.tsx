@@ -37,11 +37,14 @@ export default function Login() {
       // 🔹 Guardamos la info del usuario logueado
       localStorage.setItem("ownerId", String(res.id_dueno));
       localStorage.setItem("ownerEmail", res.email);
-      localStorage.setItem("userType", res.tipo_usuario || "user");
+      localStorage.setItem("userType", res.tipo_usuario || "owner");
+      localStorage.setItem("hasBusiness", res.haveBusiness ? "true" : "false");
 
       // 🔹 Redirigimos según el tipo de usuario
       if (res.tipo_usuario === "admin") {
         navigate("/admin-dashboard"); // 👈 ruta para el admin
+      } else if (res.haveBusiness) {
+        navigate("/business-edit"); // 👈 dueños con negocio existente
       } else {
         navigate("/business"); // 👈 ruta para usuario normal
       }

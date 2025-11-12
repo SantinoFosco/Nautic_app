@@ -8,7 +8,7 @@ cosas faltantes
 COMO PROBAR
 
 1. ejecutar el backend como estaba en el README.md
-2. luego, una vez aparezca Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-3. ir a http://127.0.0.1:8000/docs 
+2. luego, una vez aparezca Uvicorn running on http://localhost:8000 (Press CTRL+C to quit)
+3. ir a http://localhost:8000/docs
 4. ahí vas a poder probar las rutas(de business owner)
 5. para ver donde se almacenan, fijarse en el doc aparte

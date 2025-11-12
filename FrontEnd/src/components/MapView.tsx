@@ -20,7 +20,7 @@ import iconSurf from "../assets/IconoBlueSurf.png";
 import iconKite from "../assets/IconoBlueKite.png";
 import iconKayak from "../assets/IconoBlueKayak.png";
 import iconTienda from "../assets/IconoSkyBlueTienda.png";
-
+import iconFiltros from "../assets/filtros.png";
 // === TIPOS ===
 type Sport = "surf" | "kite" | "kayak";
 
@@ -32,6 +32,7 @@ function normalizeSportName(name?: string | null): Sport | null {
   if (n.includes("surf")) return "surf";
   return null;
 }
+
 
 type Spot = {
   id: string;
@@ -82,6 +83,17 @@ const tiendaIcon = L.icon({
   iconAnchor: iconAnchor,
 });
 
+const extractBusinessSports = (raw: any): Sport[] =>
+  (Array.isArray(raw) ? raw : [])
+    .map((d: any) => {
+      const candidate =
+        (typeof d === "string" ? d : null) ??
+        d?.nombre ??
+        d?.codigo ??
+        d?.deporte?.nombre;
+      return normalizeSportName(candidate);
+    })
+    .filter(Boolean) as Sport[];
 
 // 4. FUNCIÓN HELPER PARA DECIDIR EL ÍCONO
 function getIconForSpot(spot: Spot) {
@@ -110,17 +122,30 @@ export default function MapView() {
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [day, setDay] = useState(0);
   const [loadingWeather, setLoadingWeather] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
+
+  const [selectedTypes, setSelectedTypes] = useState<Array<"spot" | "business">>([]);
+
+  const toggleType = (t: "spot" | "business") => {
+    setSelectedTypes(prev =>
+      prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
+    );
+  };
+
+  const resetTypes = () => setSelectedTypes([]);
 
   // === 1️⃣ Cargar spots y negocios ===
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const resSpots = await fetch("http://127.0.0.1:8000/spot/list?day=0");
+        const resSpots = await fetch(`http://localhost:8000/spot/list?day=${day}`);
         const spotsData = await resSpots.json();
 
-        const resBusiness = await fetch("http://127.0.0.1:8000/spot/business_list");
+        const resBusiness = await fetch("http://localhost:8000/spot/business_list");
         const businessData = await resBusiness.json();
+
+        console.log("Negocios recibidos:", businessData);
 
         const normalizedSpots: Spot[] = spotsData.map((s: any) => ({
           id: `spot-${s.name}-${s.lat}-${s.lon}`,
@@ -134,11 +159,12 @@ export default function MapView() {
             : undefined,
         }));
 
+        // --- Negocios (usa businessKey como id y normaliza lat/lon) ---
         const businesses: Spot[] = businessData.map((b: any) => ({
-          id: `business-${b.nombre_fantasia}-${b.lat}-${b.lon}`,
+          id: b.id_negocio,
           name: b.nombre_fantasia,
-          lat: b.lat,
-          lon: b.lon,
+          lat: Number(b.lat),
+          lon: Number(b.lon),
           type: "business" as const,
           rubro: b.rubro,
           direccion: b.direccion,
@@ -148,43 +174,110 @@ export default function MapView() {
           horarios: b.horarios,
           descripcion: b.descripcion,
           nombre_fantasia: b.nombre_fantasia,
-          sports: (b.deportes ?? [])
-            .map((d: any) => normalizeSportName(d.nombre))
-            .filter(Boolean) as Sport[],
+          sports: extractBusinessSports(b.deportes),
         }));
 
+        // DEBUG: ver id + deportes que llegaron en /spot/business_list
+      try {
+        console.groupCollapsed("[BUSINESS_LIST] negocios recibidos");
+        console.table(
+          businesses.map(b => ({
+            id: b.id,
+            nombre: b.nombre_fantasia,
+            deportes: (b.sports ?? []).join(", "),
+            lat: b.lat,
+            lon: b.lon,
+          }))
+        );
+        console.groupEnd();
+      } catch (e) {}
+
+
         setSpots([...normalizedSpots, ...businesses]);
+        setData({});
+        setSelectedId(null);
       } catch (err) {
         console.error("Error al cargar spots o negocios:", err);
       }
     };
     fetchData();
-  }, []);
+  }, [day]);
+
 
   // === 2️⃣ Filtro por deporte (para spots y negocios) ===
   const visibleSpots = useMemo(() => {
-    if (selectedSports.length === 0) return spots;
+  // 1) Filtro por tipo (Spot / Negocio)
+  const afterType = selectedTypes.length === 0
+    ? spots
+    : spots.filter(s => selectedTypes.includes(s.type));
 
-    return spots.filter((s) => {
-      if (s.type === "spot") {
-        const best = normalizeSportName(s.best_sport);
-        return best ? selectedSports.includes(best) : false;
+  // 2) Filtro por deporte (tu lógica actual)
+  if (selectedSports.length === 0) return afterType;
+
+  return afterType.filter((s) => {
+    if (s.type === "spot") {
+      const best = normalizeSportName(s.best_sport);
+      return best ? selectedSports.includes(best) : false;
+    }
+
+    // type === "business"
+    const baseSports = s.sports ?? [];
+    const detailedSports = extractBusinessSports(data[s.id]?.sports);
+    const sportsNorm = [...baseSports, ...detailedSports];
+    return sportsNorm.some((sp) => selectedSports.includes(sp));
+    });
+  }, [selectedTypes, selectedSports, spots, data]);
+
+// ===== Precarga de deportes de negocios (tabla NegocioDeporte) =====
+useEffect(() => {
+  const loadBusinessSports = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/business_owner/all_business_with_sports");
+      const arr = await res.json(); // [{ id_negocio?, nombre_fantasia, lat, lon, deportes:[{id_deporte,nombre}] }, ...]
+
+      const byId = new Map<string, Sport[]>();
+      for (const b of arr ?? []) {
+        const key = b.id_negocio;
+        byId.set(key, extractBusinessSports(b.deportes));
       }
 
-      // type === "business"
-      const sportsNorm = (s.sports ?? [])
-        .map((n) => normalizeSportName(n))
-        .filter(Boolean) as Sport[];
-      const matchesSports = sportsNorm.some((sp) => selectedSports.includes(sp));
+      // Merge: añadimos esos deportes a cada negocio existente
+      setSpots(prev =>
+        prev.map(s => {
+          if (s.type !== "business") return s;
+          const fetched = byId.get(s.id) ?? [];
+          if (!fetched.length) return s;
+          return {
+            ...s,
+            sports: Array.from(new Set([...(s.sports ?? []), ...fetched])),
+          };
+        })
+      );
+    } catch (e) {
+      console.warn("No se pudo precargar deportes de negocios", e);
+    }
+  };
+  // DEBUG: cuántos negocios quedaron sin deportes tras precarga
+setTimeout(() => {
+  try {
+    const onlyBiz = (sArr: Spot[]) => sArr.filter(s => s.type === "business");
+    const totalBiz = onlyBiz(spots).length;
+    const sinDep = onlyBiz(spots).filter(s => !s.sports || s.sports.length === 0).length;
+    console.info(`[PRELOAD] negocios totales: ${totalBiz} | sin deportes (post-merge): ${sinDep}`);
+  } catch (e) {}
+}, 0);
 
-      const rubroNorm = normalizeSportName(s.rubro ?? null);
-      const matchesRubro = rubroNorm ? selectedSports.includes(rubroNorm) : false;
+  loadBusinessSports();
+}, []);
 
-      return matchesSports || matchesRubro;
-    });
-  }, [selectedSports, spots]);
 
-  const selectedSpot = visibleSpots.find((s) => s.id === selectedId);
+
+useEffect(() => {
+  if (!selectedId) return;
+  const stillVisible = visibleSpots.some(s => s.id === selectedId);
+  if (!stillVisible) setSelectedId(null);
+}, [visibleSpots, selectedId]);
+
 
   // === 3️⃣ Funciones auxiliares ===
   const toggleSport = (sport: string) => {
@@ -200,10 +293,27 @@ export default function MapView() {
 
     if (spot.type === "business") {
       try {
-        const url = `http://127.0.0.1:8000/spot/business_details?lat=${spot.lat}&lon=${spot.lon}`;
+        const url = `http://localhost:8000/spot/business_details?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
         const res = await fetch(url);
         const details = await res.json();
-        setData((prev) => ({ ...prev, [spot.id]: details || {} }));
+        const normalized = {
+          ...details,
+          sports: extractBusinessSports(details?.sports),
+        };
+        setData((prev) => ({ ...prev, [spot.id]: normalized || {} }));
+
+        setSpots((prev) =>
+          prev.map((s) =>
+            s.id === spot.id
+              ? {
+                  ...s,
+                  sports: Array.from(
+                    new Set([...(s.sports ?? []), ...normalized.sports])
+                  ),
+                }
+              : s
+          )
+        );
       } catch (err) {
         console.error("Error al traer detalles del negocio:", err);
         setData((prev) => ({ ...prev, [spot.id]: {} }));
@@ -216,7 +326,7 @@ export default function MapView() {
 
     setLoadingWeather(true);
     try {
-      const url = `http://127.0.0.1:8000/spot/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
+      const url = `http://localhost:8000/spot/weather_average?lat=${spot.lat}&lon=${spot.lon}&day=${day}`;
       const res = await fetch(url);
       const json = await res.json();
       setData((prev) => ({ ...prev, [spot.id]: json }));
@@ -228,58 +338,122 @@ export default function MapView() {
     }
   };
 
+  const selectedSpot = useMemo(
+  () => (selectedId ? visibleSpots.find(s => s.id === selectedId) ?? null : null),
+  [selectedId, visibleSpots]
+);
+
   // === RENDER ===
   return (
     <div className="relative flex-1 min-h-0 w-full">
-      {/* === FILTROS === */}
-      <div className="fixed z-[1100] right-4 top-[calc(64px+16px)] pointer-events-none">
-        <div className="flex flex-col gap-3 pointer-events-auto items-end">
-          {/* Filtro deporte */}
-          <div className="flex gap-2">
-            {["surf", "kite", "kayak"].map((sport) => (
-              <button
-                key={sport}
-                onClick={() => toggleSport(sport)}
-                className={`w-[90px] px-4 py-2 rounded-md text-sm font-medium shadow transition-all border ${
-                  selectedSports.includes(sport)
-                    ? "bg-[#0D3B66] text-white border-[#0D3B66]"
-                    : "bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
-                }`}
-              >
-                {sport.charAt(0).toUpperCase() + sport.slice(1)}
-              </button>
-            ))}
-            <button
-              onClick={resetSports}
-              className="w-[40px] px-2 py-2 rounded-md text-sm font-bold shadow border bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
-            >
-              ×
-            </button>
-          </div>
+      {/* === FILTROS COLAPSABLES === */}
+<div className="fixed z-[1100] right-4 top-[calc(64px+16px)]">
+  {/* Botón de abrir/cerrar */}
+  {!showFilters ? (
+    <button
+      onClick={() => setShowFilters(true)}
+      className="p-2 bg-white rounded-full shadow-lg border border-slate-200 hover:bg-slate-100 transition"
+      title="Mostrar filtros"
+    >
+      <img
+        src={iconFiltros}
+        alt="Filtros"
+        className="w-10 h-10 object-contain"
+      />
+    </button>
+  ) : (
+    <div className="bg-white/60 backdrop-blur-md p-3 rounded-xl shadow-lg border border-slate-300 flex flex-col items-end gap-2">
+  {/* --- Barra superior con selector de día y cerrar --- */}
+  <div className="flex w-full justify-end items-center mb-1">
+    <select
+      className="select select-bordered select-sm bg-white/80 text-[#0D3B66] w-[160px] border-slate-300"
+      value={day}
+      onChange={(e) => setDay(Number(e.target.value))}
+    >
+      {[...Array(5)].map((_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        const formatted = date.toLocaleString("es-AR", {
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit",
+        });
+        return (
+          <option key={i} value={i}>
+            {formatted}
+          </option>
+        );
+      })}
+    </select>
 
-          {/* Filtro día */}
-          <select
-            className="select select-bordered select-sm bg-white text-[#0D3B66] w-[180px] border-slate-300"
-            value={day}
-            onChange={(e) => setDay(Number(e.target.value))}
-          >
-            {[...Array(5)].map((_, i) => {
-              const date = new Date();
-              date.setDate(date.getDate() + i);
-              const formatted = date.toLocaleString("es-AR", {
-                weekday: "short",
-                day: "2-digit",
-                month: "2-digit",
-              });
-              return (
-                <option key={i} value={i}>
-                  {formatted}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-      </div>
+    <button
+      onClick={() => setShowFilters(false)}
+      className="text-[#0D3B66] font-bold text-lg hover:text-red-500 ml-2"
+      title="Cerrar filtros"
+    >
+      ×
+    </button>
+  </div>
+
+  {/* --- Filtros de tipo (Spot / Negocio) --- */}
+  <div className="flex gap-2">
+    {[
+      { key: "spot", label: "Spot" },
+      { key: "business", label: "Negocio" },
+    ].map(({ key, label }) => (
+      <button
+        key={key}
+        onClick={() => toggleType(key as "spot" | "business")}
+        className={`w-[90px] px-4 py-2 rounded-md text-sm font-medium shadow transition-all border ${
+          selectedTypes.includes(key as "spot" | "business")
+            ? "bg-[#0D3B66] text-white border-[#0D3B66]"
+            : "bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
+        }`}
+      >
+        {label}
+      </button>
+    ))}
+    <button
+      onClick={resetTypes}
+      className="w-[40px] px-2 py-2 rounded-md text-sm font-bold shadow border bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
+      title="Limpiar filtro de tipo"
+    >
+      ×
+    </button>
+  </div>
+
+  {/* --- Filtros de deporte (Surf / Kite / Kayak) --- */}
+  <div className="flex gap-2">
+    {[
+      { key: "surf", label: "Surf" },
+      { key: "kite", label: "Kite" },
+      { key: "kayak", label: "Kayak" },
+    ].map(({ key, label }) => (
+      <button
+        key={key}
+        onClick={() => toggleSport(key)}
+        className={`w-[90px] px-4 py-2 rounded-md text-sm font-medium shadow transition-all border ${
+          selectedSports.includes(key)
+            ? "bg-[#0D3B66] text-white border-[#0D3B66]"
+            : "bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
+        }`}
+      >
+        {label}
+      </button>
+    ))}
+    <button
+      onClick={resetSports}
+      className="w-[40px] px-2 py-2 rounded-md text-sm font-bold shadow border bg-white text-[#0D3B66] border-slate-300 hover:bg-slate-50"
+      title="Limpiar filtro de deporte"
+    >
+      ×
+    </button>
+  </div>
+</div>
+
+  )}
+</div>
+
 
       {/* === MAPA === */}
       <MapContainerAny
@@ -366,7 +540,15 @@ export default function MapView() {
 
                       {biz.sitio_web && (
                         <p className="text-center text-sm text-[#0D3B66] mt-3 underline">
-                          <a href={biz.sitio_web} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={
+                              biz.sitio_web.startsWith("http://") || biz.sitio_web.startsWith("https://")
+                                ? biz.sitio_web
+                                : `https://${biz.sitio_web}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             <span className="inline-flex items-center gap-1">
                               <Globe className="w-4 h-4" /> Sitio web
                             </span>
@@ -390,7 +572,7 @@ export default function MapView() {
                 <>
                   <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 mt-2">
                     <Info icon={<Thermometer className="w-4 h-4 text-[#0D3B66]" />} label="Temp prom." value={`${data[selectedSpot.id].temperature_2m ?? 0}°C`} />
-                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.id].wind_speed_10m ?? 0} m/s`} />
+                    <Info icon={<Wind className="w-4 h-4 text-[#0D3B66]" />} label="Viento prom." value={`${data[selectedSpot.id].wind_speed_10m ?? 0} km/h`} />
                     <Info icon={<CloudRain className="w-4 h-4 text-[#0D3B66]" />} label="Lluvia prom." value={`${data[selectedSpot.id].precipitation ?? 0} mm`} />
                     <Info icon={<Waves className="w-4 h-4 text-[#0D3B66]" />} label="Olas prom." value={`${data[selectedSpot.id].wave_height ?? 0} m`} />
                   </div>

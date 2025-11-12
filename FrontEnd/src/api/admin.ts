@@ -1,4 +1,4 @@
-import { apiGET, apiFormPOST, apiFormPUT } from "./client";
+import { apiGET, apiFormPOST, apiFormPUT, apiDELETE } from "./client";
 
 // Definimos el tipo PendingBusiness 
 export type PendingBusiness = {
@@ -135,6 +135,39 @@ export async function toggleSportStatus(id_deporte: number) {
   // Usa apiFormPUT según tu client.ts
   return apiFormPUT<{ mensaje: string }>(
     `/admin/deportes/${id_deporte}/toggle`,
+    {}
+  );
+}
+
+export type SpotAdminInfo = {
+  id: number;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  lat: number;
+  lon: number;
+  activo: boolean;
+};
+
+export async function listAdminSpots() {
+  return apiGET<SpotAdminInfo[]>("/admin/spots");
+}
+
+export async function createSpot(payload: {
+  nombre: string;
+  tipo: string;
+  lat: number;
+  lon: number;
+}) {
+  return apiFormPOST<{ mensaje: string }>(
+    "/admin/spots",
+    payload
+  );
+}
+
+export async function toggleSpotStatus(id_spot: number) {
+  return apiFormPUT<{ mensaje: string }>(
+    `/admin/spots/${id_spot}/toggle`,
     {}
   );
 }
