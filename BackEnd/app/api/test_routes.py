@@ -34,7 +34,8 @@ def get_all_spots(db: Session = Depends(get_db)):
             "codigo": s.codigo,
             "nombre": s.nombre,
             "tipo": s.tipo,
-            "coordenadas": s.coordenadas,
+            "lat": float(s.lat) if s.lat is not None else None,
+            "lon": float(s.lon) if s.lon is not None else None,
             "activo": s.activo,
         }
         for s in spots

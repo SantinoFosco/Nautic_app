@@ -310,3 +310,20 @@ async def get_general_weather(
 
     return result
 
+
+@router.get("/business_details")
+def get_business_details(lat: float = Query(...), lon: float = Query(...), day: int = Query(...), db: Session = Depends(get_db)):
+    business_db = db.query(Negocio).filter(and_(Negocio.lat == lat, Negocio.lon == lon, Negocio.estado == EstadoNegocio.activo)).first()
+    if not business_db:
+        return {}
+
+    return {
+        "nombre_fantasia": business_db.nombre_fantasia,
+        "rubro": business_db.rubro,
+        "direccion": business_db.direccion,
+        "telefono": business_db.telefono,
+        "email": business_db.email,
+        "sitio_web": business_db.sitio_web,
+        "horarios": business_db.horarios,
+        "descripcion": business_db.descripcion,
+    }
